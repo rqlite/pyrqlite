@@ -89,7 +89,7 @@ class Cursor(object):
     def _get_table_info(self, table_name):
         q = "PRAGMA table_info(%s)" % \
             self._escape_string(table_name)
-        payload = self._request("GET", "/db?explain&" + urlencode({'q': q}))
+        payload = self._request("GET", "/db/query?" + urlencode({'q': q}))
         if payload['rows']:
             return payload['rows']
         return None
@@ -111,10 +111,11 @@ class Cursor(object):
         self._column_type_cache[table_name] = column_types
         return column_types
 
-    def _request(self, method, uri, body=None):
+    def _request(self, method, uri, body=None, headers={}):
         debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
         conn = self.connection._connection
-        conn.request(method, uri, body=body)
+        logging.debug('request method: %s uri: %s headers: %s body: %s', method, uri, headers, body)
+        conn.request(method, uri, body=body, headers=headers)
         response = conn.getresponse()
         logging.debug("status: %s reason: %s", response.status, response.reason)
         response_text = response.read().decode('utf-8')
@@ -156,15 +157,34 @@ class Cursor(object):
             # TODO: add rqlite support to preserve column order
             # https://github.com/otoolep/rqlite/issues/51
             id_map = select_identifier_map(statements[0])
-            payload = self._request("GET", "/db?explain&" + urlencode({'q': operation}))
+            payload = self._request("GET", "/db/query?" + urlencode({'q': operation}))
         else:
-            payload = self._request("POST", "/db?explain&transaction", body=operation)
+            payload = self._request("POST", "/db/execute?transaction",
+                headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
 
-        if payload.get('failures'):
-            for failure in payload['failures']:
-                logging.error(json.dumps(failure))
+        last_insert_id = None
+        rows_affected = -1
+        payload_rows = {}
+        try:
+            results = payload["results"]
+        except KeyError:
+            pass
+        else:
+            rows_affected = 0
+            for item in results:
+                if 'error' in item:
+                    logging.error(json.dumps(item))
+                try:
+                    rows_affected += item['rows_affected']
+                except KeyError:
+                    pass
+                try:
+                    last_insert_id = item['last_insert_id']
+                except KeyError:
+                    pass
+                if 'values' in item:
+                    payload_rows = item
 
-        payload_rows = payload.get('rows')
         if id_map:
             parse_decltypes = self._connection._parse_decltypes
             rows = []
@@ -193,36 +213,34 @@ class Cursor(object):
                     None,
                 ))
 
-            for payload_row in payload_rows:
-                row = Row()
-                for field, field_type in types:
-                    v = payload_row[field]
-                    # TODO: support custom converters like sqlite3 module
-                    if field_type is not None:
-                        conv = _get_converter(field_type)
-                        if conv is not None:
-                            v = conv(v)
-                    row[field] = v
-                rows.append(row)
+            try:
+                values = payload_rows['values']
+            except KeyError:
+                pass
+            else:
+                for payload_row in values:
+                    row = Row()
+                    for i, (field, field_type) in enumerate(types):
+                        v = payload_row[i]
+                        # TODO: support custom converters like sqlite3 module
+                        if field_type is not None:
+                            conv = _get_converter(field_type)
+                            if conv is not None:
+                                v = conv(v)
+                        row[field] = v
+                    rows.append(row)
             self._rows = rows
             self.description = tuple(description)
         else:
             self.description = None
             self._rows = []
             if command == 'INSERT':
-                # TODO: add rqlite support to do this in the same transaction as the insert
-                # https://github.com/otoolep/rqlite/issues/50
-                payload = self._request("GET", "/db?explain&" + urlencode({'q': "SELECT last_insert_rowid() as rowid"}))
-                self.lastrowid = int(payload['rows'][0]['rowid'])
+                self.lastrowid = last_insert_id
         self.rownumber = 0
         if command == 'UPDATE':
             # sqalchemy's _emit_update_statements function asserts
             # rowcount for each update
-            self.rowcount = 1
-            # TODO: add rqlite support to return the update rowcount
-            # https://github.com/otoolep/rqlite/issues/4
-            #payload = self._request("GET", "/db?explain&" + urlencode({'q': "SELECT changes() as changes"}))
-            #self.rowcount = int(payload['rows'][0]['changes'])
+            self.rowcount = rows_affected
         else:
             self.rowcount = len(self._rows)
         return self.rowcount
@@ -231,15 +249,26 @@ class Cursor(object):
         statements = []
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
-        payload = self._request("POST", "/db?explain&transaction", body='; '.join(statements))
-        if payload.get('failures'):
-            for failure in payload['failures']:
-                logging.error(json.dumps(failure))
+        payload = self._request("POST", "/db/execute?transaction",
+            headers={'Content-Type': 'application/json'},
+            body=json.dumps(statements))
+        rows_affected = -1
+        try:
+            results = payload["results"]
+        except KeyError:
+            pass
+        else:
+            rows_affected = 0
+            for item in results:
+                if 'error' in item:
+                    logging.error(json.dumps(item))
+                try:
+                    rows_affected += item['rows_affected']
+                except KeyError:
+                    pass
         self._rows = []
         self.rownumber = 0
-        self.rowcount = -1
-        #payload = self._request("GET", "/db?explain&" + urlencode({'q': "SELECT changes() as changes"}))
-        #self.rowcount = int(payload['rows'][0]['changes'])
+        self.rowcount = rows_affected
 
     def fetchone(self):
         ''' Fetch the next row '''
