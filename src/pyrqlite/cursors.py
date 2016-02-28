@@ -90,8 +90,13 @@ class Cursor(object):
         q = "PRAGMA table_info(%s)" % \
             self._escape_string(table_name)
         payload = self._request("GET", "/db/query?" + urlencode({'q': q}))
-        if payload['rows']:
-            return payload['rows']
+        try:
+            for result in payload['results']:
+                if 'columns' in result and 'values' in result:
+                    return [dict(zip(result['columns'], row))
+                        for row in result['values']]
+        except KeyError:
+            pass
         return None
 
     def _get_table_column_types(self, table_name):
@@ -104,6 +109,7 @@ class Cursor(object):
             self._column_type_cache[table_name] = None
             return None
         column_types = {}
+        type_index = table_info
         for row in table_info:
             column_types[row['name']] = row['type'].upper()
 
