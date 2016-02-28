@@ -55,7 +55,6 @@ The following code creates a connection and executes some statements:
     connection = dbapi2.connect(
         host='localhost',
         port=4001,
-        detect_types=dbapi2.PARSE_DECLTYPES,
     )
 
     try:

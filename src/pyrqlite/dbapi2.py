@@ -3,10 +3,6 @@ import time
 
 from .connections import Connection as connect
 
-from .constants import (
-    PARSE_DECLTYPES,
-)
-
 from .exceptions import (
     Warning,
     Error,

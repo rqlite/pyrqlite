@@ -11,10 +11,6 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-from .constants import (
-    PARSE_DECLTYPES,
-)
-
 from .cursors import Cursor
 
 class Connection(object):
@@ -28,7 +24,6 @@ class Connection(object):
         self.connect_timeout = connect_timeout
         self._connection = HTTPConnection(host, port=port,
             timeout=None if self.connect_timeout is None else float(self.connect_timeout))
-        self._parse_decltypes = bool(detect_types & PARSE_DECLTYPES)
 
     def close(self):
         """Close the connection now (rather than whenever .__del__() is

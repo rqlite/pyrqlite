@@ -10,51 +10,9 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-import re
-
 from .exceptions import ProgrammingError
 
 from .row import Row
-
-from .sql import select_identifier_map
-
-from .types import (
-    NUMBER,
-    ROWID,
-)
-
-# https://www.sqlite.org/datatype3.html#affname
-_AFFINITY = re.compile(
-    r'(?P<int>INT)|'
-    #r'(?P<text>TEXT|CHAR|CLOB)|'
-    #r'(?P<blob>BLOB)'
-    r'(?P<real>REAL|FLOA|DOUB)',
-    #r'(?P<bool>BOOL)'
-    re.VERBOSE
-)
-
-_convert_cache = {}
-
-def _get_converter(column_type):
-    """Get a converter for the specified column_type."""
-    try:
-        return _convert_cache[column_type]
-    except KeyError:
-        pass
-
-    converter = None
-
-    m = _AFFINITY.search(column_type)
-    if m is not None:
-        if m.group('int') is not None:
-            converter = ROWID
-        elif m.group('real') is not None:
-            converter = NUMBER
-
-    _convert_cache[column_type] = converter
-
-    return converter
-
 
 class Cursor(object):
     arraysize = 1
@@ -84,37 +42,6 @@ class Cursor(object):
 
     def _escape_string(self, s):
         return "'%s'" % s.replace("'", "''")
-
-    def _get_table_info(self, table_name):
-        q = "PRAGMA table_info(%s)" % \
-            self._escape_string(table_name)
-        payload = self._request("GET", "/db/query?" + urlencode({'q': q}))
-        try:
-            for result in payload['results']:
-                if 'columns' in result and 'values' in result:
-                    return [dict(zip(result['columns'], row))
-                        for row in result['values']]
-        except KeyError:
-            pass
-        return None
-
-    def _get_table_column_types(self, table_name):
-        try:
-            return self._column_type_cache[table_name]
-        except KeyError:
-            pass
-        table_info = self._get_table_info(table_name)
-        if table_info is None:
-            self._column_type_cache[table_name] = None
-            return None
-        column_types = {}
-        type_index = table_info
-        for row in table_info:
-            column_types[row['name']] = row['type'].upper()
-
-        logging.debug('table: %s column types: %s', table_name, column_types)
-        self._column_type_cache[table_name] = column_types
-        return column_types
 
     def _request(self, method, uri, body=None, headers={}):
         debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
@@ -153,7 +80,6 @@ class Cursor(object):
         if parameters:
             operation = self._substitute_params(operation, parameters)
 
-        id_map = None
         command = self._get_sql_command(operation)
         if command == 'SELECT':
             payload = self._request("GET", "/db/query?" + urlencode({'q': operation}))
@@ -192,34 +118,12 @@ class Cursor(object):
             if command == 'INSERT':
                 self.lastrowid = last_insert_id
         else:
-            if self._connection._parse_decltypes:
-                id_map = select_identifier_map(operation)
-            else:
-                id_map = None
             rows = []
             description = []
-            types = []
             for field in fields:
-
-                conv = None
-                if id_map is None:
-                    table, column = None, None
-                else:
-                    table, column = id_map[field]
-
-                if table is None:
-                    # SELECT CAST('test plain returns' AS VARCHAR(60)) AS anon_1
-                    field_type = None
-                else:
-                    column_types = self._get_table_column_types(table)
-                    field_type = column_types[column]
-                    conv = _get_converter(field_type)
-
-                types.append((field, field_type))
-
                 description.append((
                     field,
-                    conv,
+                    None,
                     None,
                     None,
                     None,
@@ -234,14 +138,8 @@ class Cursor(object):
             else:
                 for payload_row in values:
                     row = Row()
-                    for i, (field, field_type) in enumerate(types):
-                        v = payload_row[i]
-                        # TODO: support custom converters like sqlite3 module
-                        if field_type is not None:
-                            conv = _get_converter(field_type)
-                            if conv is not None:
-                                v = conv(v)
-                        row[field] = v
+                    for field, value in zip(fields, payload_row):
+                        row[field] = value
                     rows.append(row)
             self._rows = rows
             self.description = tuple(description)
