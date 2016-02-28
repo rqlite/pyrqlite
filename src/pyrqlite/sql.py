@@ -1,18 +1,19 @@
 
 import collections
 
-import sqlparse
-from sqlparse.sql import (
-    Identifier,
-    IdentifierList,
-)
-
 
 def select_identifier_map(sql_str):
     """
     Given a SELECT statement, map result columns to the table/column
     that they were selected from.
     """
+
+    # lazy import, so sqlparse is optional
+    import sqlparse
+    from sqlparse.sql import (
+        Identifier,
+        IdentifierList,
+    )
 
     result_fields = []
     tables = []
