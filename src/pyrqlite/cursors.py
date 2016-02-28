@@ -11,7 +11,6 @@ except ImportError:
     from urllib import urlencode
 
 import re
-import sqlparse
 
 from .exceptions import ProgrammingError
 
@@ -146,19 +145,16 @@ class Cursor(object):
                     subst.append(self._escape_string(parameters[i]))
         return ''.join(subst)
 
+    def _get_sql_command(self, sql_str):
+        return sql_str.split(maxsplit=1)[0].upper()
+
     def execute(self, operation, parameters=None):
 
         if parameters:
             operation = self._substitute_params(operation, parameters)
 
-        # Since rqlite json responses have the column keys in random
-        # order, use sqlparse decide how to order the columns in the
-        # returned row lists.
-        statements = sqlparse.parse(operation)
-        if len(statements) != 1:
-            raise ProgrammingError('more than one statement: {}'.format(operation))
         id_map = None
-        command = statements[0].tokens[0].value.upper()
+        command = self._get_sql_command(operation)
         if command == 'SELECT':
             payload = self._request("GET", "/db/query?" + urlencode({'q': operation}))
         else:
@@ -197,7 +193,7 @@ class Cursor(object):
                 self.lastrowid = last_insert_id
         else:
             if self._connection._parse_decltypes:
-                id_map = select_identifier_map(statements[0])
+                id_map = select_identifier_map(operation)
             else:
                 id_map = None
             rows = []

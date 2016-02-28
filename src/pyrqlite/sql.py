@@ -1,13 +1,14 @@
 
 import collections
 
+import sqlparse
 from sqlparse.sql import (
     Identifier,
     IdentifierList,
 )
 
 
-def select_identifier_map(statement):
+def select_identifier_map(sql_str):
     """
     Given a SELECT statement, map result columns to the table/column
     that they were selected from.
@@ -18,6 +19,7 @@ def select_identifier_map(statement):
     result_aliases = {}
     table_aliases = {}
 
+    statement = sqlparse.parse(sql_str)[0]
     tokens = list(statement.tokens)
     tokens.reverse()
     while tokens:
