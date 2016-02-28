@@ -154,9 +154,6 @@ class Cursor(object):
         id_map = None
         command = statements[0].tokens[0].value.upper()
         if command == 'SELECT':
-            # TODO: add rqlite support to preserve column order
-            # https://github.com/otoolep/rqlite/issues/51
-            id_map = select_identifier_map(statements[0])
             payload = self._request("GET", "/db/query?" + urlencode({'q': operation}))
         else:
             payload = self._request("POST", "/db/execute?transaction",
@@ -182,18 +179,33 @@ class Cursor(object):
                     last_insert_id = item['last_insert_id']
                 except KeyError:
                     pass
-                if 'values' in item:
+                if 'columns' in item:
                     payload_rows = item
 
-        if id_map:
-            parse_decltypes = self._connection._parse_decltypes
+        try:
+            fields = payload_rows['columns']
+        except KeyError:
+            self.description = None
+            self._rows = []
+            if command == 'INSERT':
+                self.lastrowid = last_insert_id
+        else:
+            if self._connection._parse_decltypes:
+                id_map = select_identifier_map(statements[0])
+            else:
+                id_map = None
             rows = []
             description = []
             types = []
-            for field, (table, column) in id_map.items():
+            for field in fields:
 
                 conv = None
-                if table is None or not parse_decltypes:
+                if id_map is None:
+                    table, column = None, None
+                else:
+                    table, column = id_map[field]
+
+                if table is None:
                     # SELECT CAST('test plain returns' AS VARCHAR(60)) AS anon_1
                     field_type = None
                 else:
@@ -231,11 +243,7 @@ class Cursor(object):
                     rows.append(row)
             self._rows = rows
             self.description = tuple(description)
-        else:
-            self.description = None
-            self._rows = []
-            if command == 'INSERT':
-                self.lastrowid = last_insert_id
+
         self.rownumber = 0
         if command == 'UPDATE':
             # sqalchemy's _emit_update_statements function asserts
