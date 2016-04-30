@@ -83,7 +83,7 @@ Resources
 
 DB-API 2.0: http://www.python.org/dev/peps/pep-0249
 
-rqlite: https://github.com/otoolep/rqlite
+rqlite: https://github.com/rqlite/rqlite
 
 License
 -------
