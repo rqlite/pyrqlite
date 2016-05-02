@@ -210,4 +210,4 @@ class Cursor(object):
         raise NotImplementedError(self)
 
     def __iter__(self):
-        return self
+        raise NotImplementedError(self)
