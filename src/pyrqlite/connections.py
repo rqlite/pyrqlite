@@ -2,6 +2,7 @@
 try:
     from http.client import HTTPConnection
 except ImportError:
+    # pylint: disable=import-error
     from httplib import HTTPConnection
 
 try:
