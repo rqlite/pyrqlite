@@ -45,10 +45,8 @@ class Cursor(object):
 
     def _request(self, method, uri, body=None, headers={}):
         debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
-        conn = self.connection._connection
         logging.debug('request method: %s uri: %s headers: %s body: %s', method, uri, headers, body)
-        conn.request(method, uri, body=body, headers=headers)
-        response = conn.getresponse()
+        response = self.connection._fetch_response(method, uri, body=body, headers=headers)
         logging.debug("status: %s reason: %s", response.status, response.reason)
         response_text = response.read().decode('utf-8')
         logging.debug("raw response: %s", response_text)

@@ -1,6 +1,10 @@
 
 import time
 
+from .constants import (
+    UNLIMITED_REDIRECTS,
+)
+
 from .connections import Connection as connect
 
 from .exceptions import (

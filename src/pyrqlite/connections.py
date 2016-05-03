@@ -1,4 +1,6 @@
 
+import logging
+
 try:
     from http.client import HTTPConnection
 except ImportError:
@@ -6,25 +8,61 @@ except ImportError:
     from httplib import HTTPConnection
 
 try:
-    # pylint: disable=no-name-in-module
-    from urllib.parse import urlencode
+    from urllib.parse import urlparse
 except ImportError:
-    # pylint: disable=no-name-in-module
-    from urllib import urlencode
+    # pylint: disable=import-error
+    from urlparse import urlparse
+
+from .constants import (
+    UNLIMITED_REDIRECTS,
+)
 
 from .cursors import Cursor
 
 class Connection(object):
 
     def __init__(self, host=None, port=None, connect_timeout=None,
-        detect_types=0):
+        detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
         self.host = host
         self.port = port
         self.connect_timeout = connect_timeout
-        self._connection = HTTPConnection(host, port=port,
+        self.max_redirects = max_redirects
+        self._connection = self._init_connection()
+
+    def _init_connection(self):
+        return HTTPConnection(self.host, port=self.port,
             timeout=None if self.connect_timeout is None else float(self.connect_timeout))
+
+    def _fetch_response(self, method, uri, body=None, headers={}):
+        """
+        Fetch a response, handling redirection.
+        """
+        self._connection.request(method, uri, body=body, headers=headers)
+        response = self._connection.getresponse()
+        redirects = 0
+
+        while response.status == 301 and \
+            response.getheader('Location') is not None and \
+            (self.max_redirects == UNLIMITED_REDIRECTS or redirects < self.max_redirects):
+            redirects += 1
+            uri = response.getheader('Location')
+            location = urlparse(uri)
+
+            logging.debug("status: %s reason: '%s' location: '%s'",
+                response.status, response.reason, uri)
+
+            if self.host != location.hostname or self.port != location.port:
+                self._connection.close()
+                self.host = location.hostname
+                self.port = location.port
+                self._connection = self._init_connection()
+
+            self._connection.request(method, uri, body=body, headers=headers)
+            response = self._connection.getresponse()
+
+        return response
 
     def close(self):
         """Close the connection now (rather than whenever .__del__() is
