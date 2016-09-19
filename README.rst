@@ -1,11 +1,9 @@
 =======
 pyrqlite
 =======
-
-.. contents::
-
 This package contains a pure-Python rqlite client library.
 
+.. contents::
 
 Requirements
 -------------
@@ -80,12 +78,9 @@ This example will print:
 
 Resources
 ---------
-
 DB-API 2.0: http://www.python.org/dev/peps/pep-0249
 
-rqlite: https://github.com/rqlite/rqlite
 
 License
 -------
-
 pyrqlite is released under the MIT License. See LICENSE for more information.
