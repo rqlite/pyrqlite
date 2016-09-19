@@ -23,14 +23,14 @@ Installation
 The last stable release is available on github and can be installed with ``pip``::
 
     $ cd
-    $ git clone https://github.com/zmedico/pyrqlite.git
+    $ git clone https://github.com/rqlite/pyrqlite.git
     $ pip install ./pyrqlite
 
 Alternatively (e.g. if ``pip`` is not available), a tarball can be downloaded
 from GitHub and installed with Setuptools::
 
     $ # X.X is the desired pyrqlite version (e.g. 0.5 or 0.6).
-    $ curl -L https://github.com/zmedico/tarball/pyrqlite-X.X | tar xz
+    $ curl -L https://github.com/rqlite/tarball/pyrqlite-X.X | tar xz
     $ cd pyrqlite*
     $ python setup.py install
     $ # The folder pyrqlite* can be safely removed now.
