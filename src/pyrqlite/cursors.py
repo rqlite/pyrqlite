@@ -87,7 +87,7 @@ class Cursor(object):
         return ''.join(subst)
 
     def _get_sql_command(self, sql_str):
-        return sql_str.split(maxsplit=1)[0].upper()
+        return sql_str.split(None, 1)[0].upper()
 
     def execute(self, operation, parameters=None):
 
