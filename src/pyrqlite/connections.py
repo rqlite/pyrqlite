@@ -19,10 +19,11 @@ from .constants import (
 
 from .cursors import Cursor
 
+
 class Connection(object):
 
     def __init__(self, host=None, port=None, connect_timeout=None,
-        detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
+                 detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
         self.host = host
@@ -33,7 +34,7 @@ class Connection(object):
 
     def _init_connection(self):
         return HTTPConnection(self.host, port=self.port,
-            timeout=None if self.connect_timeout is None else float(self.connect_timeout))
+                              timeout=None if self.connect_timeout is None else float(self.connect_timeout))
 
     def _fetch_response(self, method, uri, body=None, headers={}):
         """
@@ -44,14 +45,14 @@ class Connection(object):
         redirects = 0
 
         while response.status == 301 and \
-            response.getheader('Location') is not None and \
-            (self.max_redirects == UNLIMITED_REDIRECTS or redirects < self.max_redirects):
+                response.getheader('Location') is not None and \
+                (self.max_redirects == UNLIMITED_REDIRECTS or redirects < self.max_redirects):
             redirects += 1
             uri = response.getheader('Location')
             location = urlparse(uri)
 
             logging.debug("status: %s reason: '%s' location: '%s'",
-                response.status, response.reason, uri)
+                          response.status, response.reason, uri)
 
             if self.host != location.hostname or self.port != location.port:
                 self._connection.close()

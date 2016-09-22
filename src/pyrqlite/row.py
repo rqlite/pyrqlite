@@ -7,7 +7,9 @@ except ImportError:
 
 from collections import OrderedDict
 
+
 class Row(list, Mapping):
+
     def __init__(self):
         super(Row, self).__init__()
         self._dict = OrderedDict()

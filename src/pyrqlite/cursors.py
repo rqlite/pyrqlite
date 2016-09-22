@@ -14,8 +14,10 @@ from .exceptions import ProgrammingError
 
 from .row import Row
 
+
 class Cursor(object):
     arraysize = 1
+
     def __init__(self, connection):
         self._connection = connection
         self.messages = []
@@ -45,14 +47,28 @@ class Cursor(object):
 
     def _request(self, method, uri, body=None, headers={}):
         debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
-        logging.debug('request method: %s uri: %s headers: %s body: %s', method, uri, headers, body)
-        response = self.connection._fetch_response(method, uri, body=body, headers=headers)
-        logging.debug("status: %s reason: %s", response.status, response.reason)
+        logging.debug(
+            'request method: %s uri: %s headers: %s body: %s',
+            method,
+            uri,
+            headers,
+            body)
+        response = self.connection._fetch_response(
+            method, uri, body=body, headers=headers)
+        logging.debug(
+            "status: %s reason: %s",
+            response.status,
+            response.reason)
         response_text = response.read().decode('utf-8')
         logging.debug("raw response: %s", response_text)
-        response_json = json.loads(response_text, object_pairs_hook=OrderedDict)
+        response_json = json.loads(
+            response_text, object_pairs_hook=OrderedDict)
         if debug:
-            logging.debug("formatted response: %s", json.dumps(response_json, indent=4))
+            logging.debug(
+                "formatted response: %s",
+                json.dumps(
+                    response_json,
+                    indent=4))
         return response_json
 
     def _substitute_params(self, operation, parameters):
@@ -60,7 +76,7 @@ class Cursor(object):
         parts = operation.split('?')
         if len(parts) - 1 != len(parameters):
             raise ProgrammingError('incorrect number of parameters (%s != %s): %s %s' %
-                (len(parts) - 1, len(parameters), operation, parameters))
+                                   (len(parts) - 1, len(parameters), operation, parameters))
         for i, part in enumerate(parts):
             subst.append(part)
             if i < len(parameters):
@@ -80,10 +96,11 @@ class Cursor(object):
 
         command = self._get_sql_command(operation)
         if command == 'SELECT':
-            payload = self._request("GET", "/db/query?" + urlencode({'q': operation}))
+            payload = self._request("GET",
+                                    "/db/query?" + urlencode({'q': operation}))
         else:
             payload = self._request("POST", "/db/execute?transaction",
-                headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
+                                    headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
 
         last_insert_id = None
         rows_affected = -1
@@ -156,8 +173,8 @@ class Cursor(object):
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
         payload = self._request("POST", "/db/execute?transaction",
-            headers={'Content-Type': 'application/json'},
-            body=json.dumps(statements))
+                                headers={'Content-Type': 'application/json'},
+                                body=json.dumps(statements))
         rows_affected = -1
         try:
             results = payload["results"]
