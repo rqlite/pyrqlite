@@ -40,7 +40,7 @@ class PyTest(Command):
 
         try:
             os.environ['EPYTHON'] = 'python{}.{}'.format(sys.version_info.major, sys.version_info.minor)
-            subprocess.check_call(['py.test', '-v', testpath,
+            subprocess.check_call(['py.test', '-v', testpath, '-s',
                         '--cov-report=html', '--cov-report=term'] +
                        (['-k', self.match] if self.match else []) +
                        ['--cov={}'.format(p) for p in find_packages(dirname(testpath), exclude=['test'])])
@@ -84,6 +84,7 @@ setup(
     packages=find_packages('src', exclude=['test']),
     platforms=['Posix'],
     cmdclass={'test': PyTest, 'lint': PyLint},
+    tests_require=['pytest', 'pytest-cov'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
