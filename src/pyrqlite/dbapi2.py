@@ -5,7 +5,8 @@ from .constants import (
     UNLIMITED_REDIRECTS,
 )
 
-from .connections import Connection as connect
+from .connections import Connection
+connect = Connection
 
 from .exceptions import (
     Warning,
