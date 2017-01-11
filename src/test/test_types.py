@@ -1,7 +1,7 @@
 #-*- coding: iso-8859-1 -*-
 # pysqlite2/test/types.py: tests for type conversion and detection
 #
-# Copyright (C) 2005 Gerhard H�ring <gh@ghaering.de>
+# Copyright (C) 2005 Gerhard Höring <gh@ghaering.de>
 #
 # This file is part of pysqlite.
 #
@@ -23,7 +23,7 @@
 
 import datetime
 import unittest
-import sqlite3 as sqlite
+import pyrqlite.dbapi2 as sqlite
 try:
     import zlib
 except ImportError:
@@ -32,7 +32,13 @@ except ImportError:
 
 class SqliteTypeTests(unittest.TestCase):
     def setUp(self):
-        self.con = sqlite.connect(":memory:")
+        con = sqlite.connect()
+        cur = con.cursor()
+        cur.execute("drop table test")
+        cur.close()
+        con.close()
+
+        self.con = sqlite.connect()
         self.cur = self.con.cursor()
         self.cur.execute("create table test(i integer, s varchar, f number, b blob)")
 
@@ -41,10 +47,11 @@ class SqliteTypeTests(unittest.TestCase):
         self.con.close()
 
     def test_CheckString(self):
-        self.cur.execute("insert into test(s) values (?)", ("�sterreich",))
+        import ipdb; ipdb.set_trace()
+        self.cur.execute("insert into test(s) values (?)", ("Österreich",))
         self.cur.execute("select s from test")
         row = self.cur.fetchone()
-        self.assertEqual(row[0], "�sterreich")
+        self.assertEqual(row[0], "Österreich")
 
     def test_CheckSmallInt(self):
         self.cur.execute("insert into test(i) values (?)", (42,))
@@ -68,16 +75,16 @@ class SqliteTypeTests(unittest.TestCase):
 
     def test_CheckBlob(self):
         sample = b"Guglhupf"
-        val = memoryview(sample)
+        val = sample
         self.cur.execute("insert into test(b) values (?)", (val,))
         self.cur.execute("select b from test")
         row = self.cur.fetchone()
         self.assertEqual(row[0], sample)
 
     def test_CheckUnicodeExecute(self):
-        self.cur.execute("select '�sterreich'")
+        self.cur.execute("select 'Österreich'")
         row = self.cur.fetchone()
-        self.assertEqual(row[0], "�sterreich")
+        self.assertEqual(row[0], "Österreich")
 
 class DeclTypesTests(unittest.TestCase):
     class Foo:
