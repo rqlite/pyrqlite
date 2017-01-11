@@ -1,4 +1,4 @@
-#-*- coding: iso-8859-1 -*-
+#-*- coding: utf-8 -*-
 # pysqlite2/test/types.py: tests for type conversion and detection
 #
 # Copyright (C) 2005 Gerhard Höring <gh@ghaering.de>
@@ -47,7 +47,6 @@ class SqliteTypeTests(unittest.TestCase):
         self.con.close()
 
     def test_CheckString(self):
-        import ipdb; ipdb.set_trace()
         self.cur.execute("insert into test(s) values (?)", ("Österreich",))
         self.cur.execute("select s from test")
         row = self.cur.fetchone()
