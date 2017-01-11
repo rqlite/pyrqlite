@@ -17,11 +17,13 @@ def _decoder(conv_func):
 
 
 converters = {
-    'TEXT': _decoder(str),
+    'TEXT': str,
+    'VARCHAR': lambda x: x.encode('utf-8'),
     'INTEGER': int,
-    'REAL': _decoder(float),
+    'REAL': float,
     'NULL': lambda x: None,
-    'BLOB': lambda x: x.decode('base64')
+    'BLOB': lambda x: x.decode('base64'),
+    '': lambda x: x.encode('utf-8'),
 }
 
 adapters = {}
