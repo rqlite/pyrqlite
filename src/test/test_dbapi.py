@@ -1,7 +1,7 @@
-#-*- coding: ISO-8859-1 -*-
+#-*- coding: utf-8 -*-
 # pysqlite2/test/dbapi.py: tests for DB-API compliance
 #
-# Copyright (C) 2004-2015 Gerhard H�ring <gh@ghaering.de>
+# Copyright (C) 2004-2010 Gerhard Höring <gh@ghaering.de>
 #
 # This file is part of pysqlite.
 #
@@ -27,7 +27,6 @@ try:
 except ImportError:
     threading = None
 import pyrqlite.dbapi2 as sqlite
-
 
 class ModuleTests(unittest.TestCase):
     def test_CheckAPILevel(self):
@@ -85,24 +84,13 @@ class ModuleTests(unittest.TestCase):
                         "NotSupportedError is not a subclass of DatabaseError")
 
 class ConnectionTests(unittest.TestCase):
-    def test_setUp(self):
-        self.cx = sqlite.connect(host='localhost', port=4001)
-        cu = self.cx.cursor()
-        #import ipdb; ipdb.set_trace()
-        
-        cu.execute("PRAGMA writable_schema = 1")
-        cu.execute("drop table test")
-        cu.execute("delete from sqlite_master where type in ('table', 'index', 'trigger')")
-        cu.execute("PRAGMA writable_schema = 0")
-        self.cx.commit()
-        self.cx.close()
-
-        self.cx = sqlite.connect(host='localhost', port=4001)
+    def setUp(self):
+        self.cx = sqlite.connect(":memory:")
         cu = self.cx.cursor()
         cu.execute("create table test(id integer primary key, name text)")
         cu.execute("insert into test(name) values (?)", ("foo",))
 
-    def test_tearDown(self):
+    def tearDown(self):
         self.cx.close()
 
     def test_CheckCommit(self):
@@ -152,19 +140,14 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(self.cx.ProgrammingError, sqlite.ProgrammingError)
         self.assertEqual(self.cx.NotSupportedError, sqlite.NotSupportedError)
 
-    def test_CheckOpenFlags(self):
-        con = sqlite.connect(":memory:", flags=sqlite.SQLITE_OPEN_READONLY)
-        # exception will be raised because of readonly database
-        self.assertRaises(sqlite.OperationalError, con.execute, "create table test(foo)")
-
 class CursorTests(unittest.TestCase):
-    def test_setUp(self):
+    def setUp(self):
         self.cx = sqlite.connect(":memory:")
         self.cu = self.cx.cursor()
         self.cu.execute("create table test(id integer primary key, name text, income number)")
         self.cu.execute("insert into test(name) values (?)", ("foo",))
 
-    def test_tearDown(self):
+    def tearDown(self):
         self.cu.close()
         self.cx.close()
 
@@ -258,9 +241,9 @@ class CursorTests(unittest.TestCase):
 
     def test_CheckExecuteParamSequence(self):
         class L(object):
-            def test___len__(self):
+            def __len__(self):
                 return 1
-            def test___getitem__(self, x):
+            def __getitem__(self, x):
                 assert x == 0
                 return "foo"
 
@@ -276,8 +259,12 @@ class CursorTests(unittest.TestCase):
         self.assertEqual(row[0], "foo")
 
     def test_CheckExecuteDictMapping_Mapping(self):
+        # Test only works with Python 2.5 or later
+        if sys.version_info < (2, 5, 0):
+            return
+
         class D(dict):
-            def test___missing__(self, key):
+            def __missing__(self, key):
                 return "foo"
 
         self.cu.execute("insert into test(name) values ('foo')")
@@ -348,10 +335,10 @@ class CursorTests(unittest.TestCase):
 
     def test_CheckExecuteManyIterator(self):
         class MyIter:
-            def test___init__(self):
+            def __init__(self):
                 self.value = 5
 
-            def test_next(self):
+            def next(self):
                 if self.value == 10:
                     raise StopIteration
                 else:
@@ -361,7 +348,7 @@ class CursorTests(unittest.TestCase):
         self.cu.executemany("insert into test(income) values (?)", MyIter())
 
     def test_CheckExecuteManyGenerator(self):
-        def test_mygen():
+        def mygen():
             for i in range(5):
                 yield (i,)
 
@@ -471,7 +458,7 @@ class CursorTests(unittest.TestCase):
 
     def test_CheckWrongCursorCallable(self):
         try:
-            def test_f(): pass
+            def f(): pass
             cur = self.cx.cursor(f)
             self.fail("should have raised a TypeError")
         except TypeError:
@@ -489,17 +476,17 @@ class CursorTests(unittest.TestCase):
 
 @unittest.skipUnless(threading, 'This test requires threading.')
 class ThreadTests(unittest.TestCase):
-    def test_setUp(self):
+    def setUp(self):
         self.con = sqlite.connect(":memory:")
         self.cur = self.con.cursor()
         self.cur.execute("create table test(id integer primary key, name text, bin binary, ratio number, ts timestamp)")
 
-    def test_tearDown(self):
+    def tearDown(self):
         self.cur.close()
         self.con.close()
 
     def test_CheckConCursor(self):
-        def test_run(con, errors):
+        def run(con, errors):
             try:
                 cur = con.cursor()
                 errors.append("did not raise ProgrammingError")
@@ -517,7 +504,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckConCommit(self):
-        def test_run(con, errors):
+        def run(con, errors):
             try:
                 con.commit()
                 errors.append("did not raise ProgrammingError")
@@ -535,7 +522,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckConRollback(self):
-        def test_run(con, errors):
+        def run(con, errors):
             try:
                 con.rollback()
                 errors.append("did not raise ProgrammingError")
@@ -553,7 +540,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckConClose(self):
-        def test_run(con, errors):
+        def run(con, errors):
             try:
                 con.close()
                 errors.append("did not raise ProgrammingError")
@@ -571,7 +558,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckCurImplicitBegin(self):
-        def test_run(cur, errors):
+        def run(cur, errors):
             try:
                 cur.execute("insert into test(name) values ('a')")
                 errors.append("did not raise ProgrammingError")
@@ -589,7 +576,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckCurClose(self):
-        def test_run(cur, errors):
+        def run(cur, errors):
             try:
                 cur.close()
                 errors.append("did not raise ProgrammingError")
@@ -607,7 +594,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckCurExecute(self):
-        def test_run(cur, errors):
+        def run(cur, errors):
             try:
                 cur.execute("select name from test")
                 errors.append("did not raise ProgrammingError")
@@ -626,7 +613,7 @@ class ThreadTests(unittest.TestCase):
             self.fail("\n".join(errors))
 
     def test_CheckCurIterNext(self):
-        def test_run(cur, errors):
+        def run(cur, errors):
             try:
                 row = cur.fetchone()
                 errors.append("did not raise ProgrammingError")
@@ -665,7 +652,8 @@ class ConstructorTests(unittest.TestCase):
         ts = sqlite.TimestampFromTicks(42)
 
     def test_CheckBinary(self):
-        b = sqlite.Binary(chr(0) + "'")
+        with test_support.check_py3k_warnings():
+            b = sqlite.Binary(chr(0) + "'")
 
 class ExtensionTests(unittest.TestCase):
     def test_CheckScriptStringSql(self):
@@ -735,10 +723,10 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(result, 5, "Basic test of Connection.executescript")
 
 class ClosedConTests(unittest.TestCase):
-    def test_setUp(self):
+    def setUp(self):
         pass
 
-    def test_tearDown(self):
+    def tearDown(self):
         pass
 
     def test_CheckClosedConCursor(self):
@@ -789,7 +777,7 @@ class ClosedConTests(unittest.TestCase):
     def test_CheckClosedCreateFunction(self):
         con = sqlite.connect(":memory:")
         con.close()
-        def test_f(x): return 17
+        def f(x): return 17
         try:
             con.create_function("foo", 1, f)
             self.fail("Should have raised a ProgrammingError")
@@ -802,11 +790,11 @@ class ClosedConTests(unittest.TestCase):
         con = sqlite.connect(":memory:")
         con.close()
         class Agg:
-            def test___init__(self):
+            def __init__(self):
                 pass
-            def test_step(self, x):
+            def step(self, x):
                 pass
-            def test_finalize(self):
+            def finalize(self):
                 return 17
         try:
             con.create_aggregate("foo", 1, Agg)
@@ -819,7 +807,7 @@ class ClosedConTests(unittest.TestCase):
     def test_CheckClosedSetAuthorizer(self):
         con = sqlite.connect(":memory:")
         con.close()
-        def test_authorizer(*args):
+        def authorizer(*args):
             return sqlite.DENY
         try:
             con.set_authorizer(authorizer)
@@ -832,7 +820,7 @@ class ClosedConTests(unittest.TestCase):
     def test_CheckClosedSetProgressCallback(self):
         con = sqlite.connect(":memory:")
         con.close()
-        def test_progress(): pass
+        def progress(): pass
         try:
             con.set_progress_handler(progress, 100)
             self.fail("Should have raised a ProgrammingError")
@@ -853,10 +841,10 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
 class ClosedCurTests(unittest.TestCase):
-    def test_setUp(self):
+    def setUp(self):
         pass
 
-    def test_tearDown(self):
+    def tearDown(self):
         pass
 
     def test_CheckClosed(self):
@@ -882,50 +870,7 @@ class ClosedCurTests(unittest.TestCase):
             except:
                 self.fail("Should have raised a ProgrammingError: " + method_name)
 
-did_rollback = False
-
-class MyConnection(sqlite.Connection):
-    def test_rollback(self):
-        global did_rollback
-        did_rollback = True
-        sqlite.Connection.rollback(self)
-
-class ContextTests(unittest.TestCase):
-    def test_setUp(self):
-        global did_rollback
-        self.con = sqlite.connect(":memory:", factory=MyConnection)
-        self.con.execute("create table test(c unique)")
-        did_rollback = False
-
-    def test_tearDown(self):
-        self.con.close()
-
-    def test_CheckContextManager(self):
-        """Can the connection be used as a context manager at all?"""
-        with self.con:
-            pass
-
-    def test_CheckContextManagerCommit(self):
-        """Is a commit called in the context manager?"""
-        with self.con:
-            self.con.execute("insert into test(c) values ('foo')")
-        self.con.rollback()
-        count = self.con.execute("select count(*) from test").fetchone()[0]
-        self.assertEqual(count, 1)
-
-    def test_CheckContextManagerRollback(self):
-        """Is a rollback called in the context manager?"""
-        global did_rollback
-        self.assertEqual(did_rollback, False)
-        try:
-            with self.con:
-                self.con.execute("insert into test(c) values (4)")
-                self.con.execute("insert into test(c) values (4)")
-        except sqlite.IntegrityError:
-            pass
-        self.assertEqual(did_rollback, True)
-
-def test_suite():
+def suite():
     module_suite = unittest.makeSuite(ModuleTests, "Check")
     connection_suite = unittest.makeSuite(ConnectionTests, "Check")
     cursor_suite = unittest.makeSuite(CursorTests, "Check")
@@ -934,13 +879,11 @@ def test_suite():
     ext_suite = unittest.makeSuite(ExtensionTests, "Check")
     closed_con_suite = unittest.makeSuite(ClosedConTests, "Check")
     closed_cur_suite = unittest.makeSuite(ClosedCurTests, "Check")
-    context_suite = unittest.makeSuite(ContextTests, "Check")
-    return unittest.TestSuite((module_suite, connection_suite, cursor_suite, thread_suite, constructor_suite, ext_suite, closed_con_suite, closed_cur_suite, context_suite))
+    return unittest.TestSuite((module_suite, connection_suite, cursor_suite, thread_suite, constructor_suite, ext_suite, closed_con_suite, closed_cur_suite))
 
-def test_test():
+def test():
     runner = unittest.TextTestRunner()
     runner.run(suite())
 
 if __name__ == "__main__":
     test()
-
