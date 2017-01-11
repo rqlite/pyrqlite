@@ -13,6 +13,7 @@ except ImportError:
 from .exceptions import ProgrammingError
 
 from .row import Row
+from .extensions import _convert_to_python
 
 
 class Cursor(object):
@@ -80,7 +81,7 @@ class Cursor(object):
         for i, part in enumerate(parts):
             subst.append(part)
             if i < len(parameters):
-                if isinstance(parameters[i], int):
+                if isinstance(parameters[i], numbers.Number):
                     subst.append("{}".format(parameters[i]))
                 else:
                     subst.append(self._escape_string(parameters[i]))
@@ -148,13 +149,14 @@ class Cursor(object):
 
             try:
                 values = payload_rows['values']
+                types = payload_rows['types']
             except KeyError:
                 pass
             else:
                 for payload_row in values:
                     row = Row()
-                    for field, value in zip(fields, payload_row):
-                        row[field] = value
+                    for field, type_, value in zip(fields, types, payload_row):
+                        row[field] = _convert_to_python(type_, value)
                     rows.append(row)
             self._rows = rows
             self.description = tuple(description)
