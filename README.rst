@@ -24,7 +24,7 @@ The last stable release is available on github and can be installed with ``pip``
     $ git clone https://github.com/rqlite/pyrqlite.git
     $ pip install ./pyrqlite
 
-Ofter are released on PyPI too, able to be installed via the package named ``rqlite``::
+Often they are released on PyPI too, able to be installed via the package named ``rqlite``::
 
     $ pip install rqlite
 
