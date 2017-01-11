@@ -84,6 +84,7 @@ setup(
     packages=find_packages('src', exclude=['test']),
     platforms=['Posix'],
     cmdclass={'test': PyTest, 'lint': PyLint},
+    tests_require=['pytest', 'pytest-cov'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
