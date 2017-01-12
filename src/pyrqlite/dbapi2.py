@@ -35,6 +35,7 @@ from .types import (
 
 # Compat with native sqlite module
 from .extensions import converters
+from sqlite3.dbapi2 import PrepareProtocol
 
 
 paramstyle = "qmark"

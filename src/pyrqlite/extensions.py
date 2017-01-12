@@ -9,6 +9,7 @@ Adapters transforms Python native types to RQLite-aware values.
 """
 
 import numbers
+import sqlite3
 
 
 def _decoder(conv_func):
@@ -61,6 +62,16 @@ def _adapt_from_python(value):
     if not isinstance(value, basestring):
         try:
             adapted = adapters[type(value)](value)
+        except KeyError:
+            # No adapter registered. Let the object adapt itself via PEP-246.
+            # It has been rejected by the BDFL, but is still implemented
+            # on stdlib sqlite3 module even on Python 3 !!
+            if hasattr(value, '__adapt__'):
+                adapted = value.__adapt__(sqlite3.PrepareProtocol)
+            elif hasattr(value, '__conform__'):
+                adapted = value.__conform__(sqlite3.PrepareProtocol)
+            else:
+                raise
     else:
         adapted = value
 
