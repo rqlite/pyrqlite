@@ -109,7 +109,13 @@ class DeclTypesTests(unittest.TestCase):
             return "<%s>" % self.val
 
     def setUp(self):
-        self.con = sqlite.connect(":memory:", detect_types=sqlite.PARSE_DECLTYPES)
+        con = sqlite.connect()
+        cur = con.cursor()
+        cur.execute("drop table test")
+        cur.close()
+        con.close()
+
+        self.con = sqlite.connect(detect_types=sqlite.PARSE_DECLTYPES)
         self.cur = self.con.cursor()
         self.cur.execute("create table test(i int, s str, f float, b bool, u unicode, foo foo, bin blob, n1 number, n2 number(5))")
 
@@ -203,7 +209,7 @@ class DeclTypesTests(unittest.TestCase):
     def test_CheckBlob(self):
         # default
         sample = b"Guglhupf"
-        val = memoryview(sample)
+        val = sample
         self.cur.execute("insert into test(bin) values (?)", (val,))
         self.cur.execute("select bin from test")
         row = self.cur.fetchone()
