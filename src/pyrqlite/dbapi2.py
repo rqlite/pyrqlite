@@ -33,6 +33,10 @@ from .types import (
     ROWID,
 )
 
+# Compat with native sqlite module
+from .extensions import converters
+
+
 paramstyle = "qmark"
 
 threadsafety = 1
@@ -53,3 +57,7 @@ def TimestampFromTicks(ticks):
 
 # accessed by sqlalchemy sqlite dialect
 sqlite_version_info = (3, 10, 0)
+
+# Compat with native sqlite module
+PARSE_DECLTYPES = 1
+PARSE_COLNAMES = 2

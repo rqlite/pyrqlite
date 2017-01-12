@@ -1,6 +1,5 @@
 
 from collections import OrderedDict
-import numbers
 import json
 import logging
 
@@ -14,7 +13,7 @@ except ImportError:
 from .exceptions import ProgrammingError
 
 from .row import Row
-from .extensions import _convert_to_python
+from .extensions import _convert_to_python, _adapt_from_python
 
 
 class Cursor(object):
@@ -44,8 +43,6 @@ class Cursor(object):
     def close(self):
         self._rows = None
 
-    def _escape_string(self, s):
-        return "'%s'" % s.replace("'", "''")
 
     def _request(self, method, uri, body=None, headers={}):
         debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
@@ -74,6 +71,9 @@ class Cursor(object):
         return response_json
 
     def _substitute_params(self, operation, parameters):
+        '''
+        SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and NULL
+        '''
         subst = []
         parts = operation.split('?')
         if len(parts) - 1 != len(parameters):
@@ -82,10 +82,7 @@ class Cursor(object):
         for i, part in enumerate(parts):
             subst.append(part)
             if i < len(parameters):
-                if isinstance(parameters[i], numbers.Number):
-                    subst.append("{}".format(parameters[i]))
-                else:
-                    subst.append(self._escape_string(parameters[i]))
+                subst.append(_adapt_from_python(parameters[i]))
         return ''.join(subst)
 
     def _get_sql_command(self, sql_str):

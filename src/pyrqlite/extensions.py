@@ -8,6 +8,9 @@ Converters transforms RQLite answers to Python native types.
 Adapters transforms Python native types to RQLite-aware values.
 """
 
+import numbers
+
+
 def _decoder(conv_func):
     """ The Python sqlite3 interface returns always byte strings.
         This function converts the received value to a regular string before
@@ -26,7 +29,11 @@ converters = {
     '': lambda x: x.encode('utf-8'),
 }
 
-adapters = {}
+
+adapters = {
+    bool: int,
+    #str: lambda x: x.decode('utf-8')
+}
 
 
 def register_converter(type_string, value_string):
@@ -41,3 +48,19 @@ def _convert_to_python(type_, value):
     if type_.upper() in converters:
         return converters[type_.upper()](value)
     return value
+
+
+def _adapt_from_python(value):
+    if isinstance(value, basestring):
+        escaped = value.replace(b"'", b"''")
+        adapted = (type(value)(b"'%s'")) % escaped
+    else:
+        if isinstance(value, numbers.Number):
+            adapted = value
+        else:
+            adapted = adapters[type(value)](value)
+
+    if not isinstance(adapted, basestring):
+        adapted = str(adapted)
+
+    return adapted
