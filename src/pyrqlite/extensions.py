@@ -55,17 +55,39 @@ def register_adapter(type_, function):
     raise NotImplementedError()
 
 
-def _convert_to_python(type_, value):
-    ## From: https://github.com/python/cpython/blob/c72b6008e0578e334f962ee298279a23ba298856/Modules/_sqlite/cursor.c#L167
-    # /* Converter names are split at '(' and blanks.
-    #  * This allows 'INTEGER NOT NULL' to be treated as 'INTEGER' and
-    #  * 'NUMBER(10)' to be treated as 'NUMBER', for example.
-    #  * In other words, it will work as people expect it to work.*/
-    type_upper = type_.upper().partition('(')[0].partition(' ')[0]
-    if type_upper in converters:
+def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_colnames=False):
+    """
+    Tries to mimic stock sqlite3 module behaviours.
+
+    PARSE_COLNAMES have precedence over PARSE_DECLTYPES on _sqlite/cursor.c code
+    """
+    converter = None
+    type_upper = None
+
+    if '[' in column_name and ']' in column_name and parse_colnames:
+        type_upper = column_name.upper().partition('[')[-1].partition(']')[0]
+        if type_upper in converters:
+            converter = converters[type_upper]
+
+    if not converter:
+        type_upper = type_.upper()
+        if parse_decltypes:
+            ## From: https://github.com/python/cpython/blob/c72b6008e0578e334f962ee298279a23ba298856/Modules/_sqlite/cursor.c#L167
+            # /* Converter names are split at '(' and blanks.
+            #  * This allows 'INTEGER NOT NULL' to be treated as 'INTEGER' and
+            #  * 'NUMBER(10)' to be treated as 'NUMBER', for example.
+            #  * In other words, it will work as people expect it to work.*/
+            type_upper = type_upper.partition('(')[0].partition(' ')[0]
+        if type_upper in converters:
+            converter = converters[type_upper]
+
+    if converter:
         if type_upper not in _native_converters:
             value = value.decode('base64')
-        return converters[type_upper](value)
+        value = converter(value)
+    elif isinstance(value, basestring):
+        value = value.decode('base64')
+
     return value
 
 
