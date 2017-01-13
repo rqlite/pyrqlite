@@ -11,6 +11,8 @@ Adapters transforms Python native types to RQLite-aware values.
 import numbers
 import sqlite3
 
+from .exceptions import InterfaceError
+
 
 def _decoder(conv_func):
     """ The Python sqlite3 interface returns always byte strings.
@@ -67,7 +69,7 @@ def _adapt_from_python(value):
     if not isinstance(value, basestring):
         try:
             adapted = adapters[type(value)](value)
-        except KeyError:
+        except KeyError, e:
             # No adapter registered. Let the object adapt itself via PEP-246.
             # It has been rejected by the BDFL, but is still implemented
             # on stdlib sqlite3 module even on Python 3 !!
@@ -76,7 +78,7 @@ def _adapt_from_python(value):
             elif hasattr(value, '__conform__'):
                 adapted = value.__conform__(sqlite3.PrepareProtocol)
             else:
-                raise
+                raise InterfaceError(e)
     else:
         adapted = value
 

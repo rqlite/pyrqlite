@@ -10,7 +10,7 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-from .exceptions import ProgrammingError
+from .exceptions import ProgrammingError, InterfaceError
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python
@@ -77,7 +77,7 @@ class Cursor(object):
         subst = []
         parts = operation.split('?')
         if len(parts) - 1 != len(parameters):
-            raise ProgrammingError('incorrect number of parameters (%s != %s): %s %s' %
+            raise InterfaceError('incorrect number of parameters (%s != %s): %s %s' %
                                    (len(parts) - 1, len(parameters), operation, parameters))
         for i, part in enumerate(parts):
             subst.append(part)
