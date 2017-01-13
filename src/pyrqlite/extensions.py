@@ -82,7 +82,8 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
             #  * In other words, it will work as people expect it to work.*/
             type_upper = type_upper.partition('(')[0].partition(' ')[0]
         if type_upper in converters:
-            converter = converters[type_upper]
+            if type_upper in _native_converters or parse_decltypes:
+                converter = converters[type_upper]
 
     if converter:
         if type_upper not in _native_converters:
