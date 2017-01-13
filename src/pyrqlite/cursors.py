@@ -166,7 +166,7 @@ class Cursor(object):
             self.rowcount = rows_affected
         else:
             self.rowcount = len(self._rows)
-        return self.rowcount
+        return self
 
     def executemany(self, operation, seq_of_parameters=None):
         statements = []
