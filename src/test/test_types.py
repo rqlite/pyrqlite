@@ -181,7 +181,7 @@ class DeclTypesTests(unittest.TestCase):
 
     def test_CheckUnicode(self):
         # default
-        val = "\xd6sterreich"
+        val = u"\xd6sterreich"
         self.cur.execute("insert into test(u) values (?)", (val,))
         self.cur.execute("select u from test")
         row = self.cur.fetchone()
