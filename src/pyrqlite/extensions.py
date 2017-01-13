@@ -8,6 +8,7 @@ Converters transforms RQLite answers to Python native types.
 Adapters transforms Python native types to RQLite-aware values.
 """
 
+import binascii
 import numbers
 import sqlite3
 
@@ -85,7 +86,10 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
 
     if converter:
         if type_upper not in _native_converters:
-            value = value.decode('base64')
+            try:
+                value = value.decode('base64')
+            except binascii.Error:
+                pass
         value = converter(value)
     elif isinstance(value, basestring):
         value = value.decode('base64')
