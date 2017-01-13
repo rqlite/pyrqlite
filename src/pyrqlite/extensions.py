@@ -50,7 +50,12 @@ def register_adapter(type_, function):
 
 
 def _convert_to_python(type_, value):
-    type_upper = type_.upper()
+    ## From: https://github.com/python/cpython/blob/c72b6008e0578e334f962ee298279a23ba298856/Modules/_sqlite/cursor.c#L167
+    # /* Converter names are split at '(' and blanks.
+    #  * This allows 'INTEGER NOT NULL' to be treated as 'INTEGER' and
+    #  * 'NUMBER(10)' to be treated as 'NUMBER', for example.
+    #  * In other words, it will work as people expect it to work.*/
+    type_upper = type_.upper().partition('(')[0].partition(' ')[0]
     if type_upper in converters:
         if type_upper not in _native_converters:
             value = value.decode('base64')
