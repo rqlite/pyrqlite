@@ -30,10 +30,12 @@ adapters = {
     float: lambda x: x,
     int: lambda x: x,
     bool: lambda x: int(x),
+    unicode: lambda x: x.encode('utf-8')
 }
 converters = {
     'TEXT': str,
     'VARCHAR': lambda x: x.encode('utf-8'),
+    'UNICODE': lambda x: x.decode('utf-8'),
     'INTEGER': int,
     'BOOL': bool,
     'FLOAT': float,
