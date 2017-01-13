@@ -13,7 +13,7 @@ except ImportError:
 from .exceptions import ProgrammingError, InterfaceError
 
 from .row import Row
-from .extensions import _convert_to_python, _adapt_from_python
+from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
 
 
 class Cursor(object):
@@ -136,7 +136,7 @@ class Cursor(object):
             description = []
             for field in fields:
                 description.append((
-                    field,
+                    _column_stripper(field, parse_colnames=self.connection.parse_colnames),
                     None,
                     None,
                     None,

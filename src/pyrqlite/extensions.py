@@ -125,3 +125,8 @@ def _adapt_from_python(value):
 
 def _escape_string(value):
     return (type(value)(b"'%s'")) % (value.replace(b"'", b"''"))
+
+def _column_stripper(column_name, parse_colnames=False):
+    return column_name.partition(' ')[0] if parse_colnames else column_name
+
+
