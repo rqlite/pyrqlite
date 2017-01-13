@@ -230,7 +230,13 @@ class DeclTypesTests(unittest.TestCase):
 
 class ColNamesTests(unittest.TestCase):
     def setUp(self):
-        self.con = sqlite.connect(":memory:", detect_types=sqlite.PARSE_COLNAMES)
+        con = sqlite.connect()
+        cur = con.cursor()
+        cur.execute("drop table test")
+        cur.close()
+        con.close()
+
+        self.con = sqlite.connect(detect_types=sqlite.PARSE_COLNAMES)
         self.cur = self.con.cursor()
         self.cur.execute("create table test(x foo)")
 
