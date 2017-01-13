@@ -60,5 +60,4 @@ def TimestampFromTicks(ticks):
 sqlite_version_info = (3, 10, 0)
 
 # Compat with native sqlite module
-PARSE_DECLTYPES = 1
-PARSE_COLNAMES = 2
+from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES

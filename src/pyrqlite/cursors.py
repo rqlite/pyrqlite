@@ -154,7 +154,9 @@ class Cursor(object):
                 for payload_row in values:
                     row = Row()
                     for field, type_, value in zip(fields, types, payload_row):
-                        row[field] = _convert_to_python(type_, value)
+                        row[field] = _convert_to_python(field, type_, value,
+                                                        parse_decltypes=self.connection.parse_decltypes,
+                                                        parse_colnames=self.connection.parse_colnames)
                     rows.append(row)
             self._rows = rows
             self.description = tuple(description)

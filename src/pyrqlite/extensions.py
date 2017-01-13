@@ -14,6 +14,10 @@ import sqlite3
 from .exceptions import InterfaceError
 
 
+PARSE_DECLTYPES = 1
+PARSE_COLNAMES = 2
+
+
 def _decoder(conv_func):
     """ The Python sqlite3 interface returns always byte strings.
         This function converts the received value to a regular string before

@@ -18,6 +18,7 @@ from .constants import (
 )
 
 from .cursors import Cursor
+from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES
 
 
 class Connection(object):
@@ -30,6 +31,9 @@ class Connection(object):
         self.port = port
         self.connect_timeout = connect_timeout
         self.max_redirects = max_redirects
+        self.detect_types = detect_types
+        self.parse_decltypes = detect_types & PARSE_DECLTYPES
+        self.parse_colnames = detect_types & PARSE_COLNAMES
         self._connection = self._init_connection()
 
     def _init_connection(self):
