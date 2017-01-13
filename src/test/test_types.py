@@ -301,7 +301,13 @@ class ColNamesTests(unittest.TestCase):
 class CommonTableExpressionTests(unittest.TestCase):
 
     def setUp(self):
-        self.con = sqlite.connect(":memory:")
+        con = sqlite.connect()
+        cur = con.cursor()
+        cur.execute("drop table test")
+        cur.close()
+        con.close()
+
+        self.con = sqlite.connect()
         self.cur = self.con.cursor()
         self.cur.execute("create table test(x foo)")
 
