@@ -31,7 +31,8 @@ adapters = {
     float: lambda x: x,
     int: lambda x: x,
     bool: lambda x: int(x),
-    unicode: lambda x: x.encode('utf-8')
+    unicode: lambda x: x.encode('utf-8'),
+    type(None): lambda x: None,
 }
 converters = {
     'TEXT': str,
@@ -118,6 +119,8 @@ def _adapt_from_python(value):
     # The adapter could had returned a string
     if isinstance(adapted, basestring):
         adapted = _escape_string(adapted)
+    elif adapted is None:
+        adapted = 'NULL'
     else:
         adapted = str(adapted)
 
