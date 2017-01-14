@@ -343,7 +343,7 @@ class ObjectAdaptationTests(unittest.TestCase):
     cast = staticmethod(cast)
 
     def setUp(self):
-        self.con = sqlite.connect(":memory:")
+        self.con = sqlite.connect()
         try:
             del sqlite.adapters[int]
         except:
@@ -368,7 +368,7 @@ class BinaryConverterTests(unittest.TestCase):
     convert = staticmethod(convert)
 
     def setUp(self):
-        self.con = sqlite.connect(":memory:", detect_types=sqlite.PARSE_COLNAMES)
+        self.con = sqlite.connect(detect_types=sqlite.PARSE_COLNAMES)
         sqlite.register_converter("bin", BinaryConverterTests.convert)
 
     def tearDown(self):
@@ -381,7 +381,13 @@ class BinaryConverterTests(unittest.TestCase):
 
 class DateTimeTests(unittest.TestCase):
     def setUp(self):
-        self.con = sqlite.connect(":memory:", detect_types=sqlite.PARSE_DECLTYPES)
+        con = sqlite.connect()
+        cur = con.cursor()
+        cur.execute("drop table test")
+        cur.close()
+        con.close()
+
+        self.con = sqlite.connect(detect_types=sqlite.PARSE_DECLTYPES)
         self.cur = self.con.cursor()
         self.cur.execute("create table test(d date, ts timestamp)")
 
