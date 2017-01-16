@@ -53,8 +53,8 @@ converters = {
 _native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'TEXT', 'VARCHAR', 'NULL', '')
 
 
-def register_converter(type_string, value_string):
-    raise NotImplementedError()
+def register_converter(type_string, function):
+    converters[type_string.upper()] = function
 
 
 def register_adapter(type_, function):
