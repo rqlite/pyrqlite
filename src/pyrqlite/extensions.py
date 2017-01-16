@@ -9,6 +9,7 @@ Adapters transforms Python native types to RQLite-aware values.
 """
 
 import binascii
+import datetime
 import numbers
 import sqlite3
 
@@ -27,12 +28,38 @@ def _decoder(conv_func):
     return lambda s: conv_func(s.decode('utf-8'))
 
 
+def _adapt_date(val):
+    return val.isoformat()
+
+def _adapt_datetime(val):
+    return val.isoformat(b" ")
+
+def _convert_date(val):
+    return datetime.date(*map(int, val.split("-")))
+
+def _convert_timestamp(val):
+    datepart, timepart = val.split("T")
+    year, month, day = map(int, datepart.split("-"))
+    timepart_full = timepart.strip('Z').split(".")
+    hours, minutes, seconds = map(int, timepart_full[0].split(":"))
+    if len(timepart_full) == 2:
+        microseconds = int('{:0<6.6}'.format(timepart_full[1].decode()))
+    else:
+        microseconds = 0
+
+    val = datetime.datetime(year, month, day, hours, minutes, seconds, microseconds)
+    return val
+
+
 adapters = {
     float: lambda x: x,
     int: lambda x: x,
     bool: lambda x: int(x),
     unicode: lambda x: x.encode('utf-8'),
     type(None): lambda x: None,
+    datetime.date: _adapt_date,
+    datetime.datetime: _adapt_datetime,
+
 }
 adapters = {(type_, sqlite3.PrepareProtocol): val for type_, val in adapters.items()}
 
@@ -46,11 +73,13 @@ converters = {
     'REAL': float,
     'NULL': lambda x: None,
     'BLOB': lambda x: x,
+    'DATE': _convert_date,
+    'TIMESTAMP': _convert_timestamp,
     '': lambda x: x.encode('utf-8'),
 }
 
 # Non-native converters will be decoded from base64 before fed into converter
-_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'TEXT', 'VARCHAR', 'NULL', '')
+_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'TEXT', 'VARCHAR', 'NULL', 'DATE', 'TIMESTAMP', '')
 
 
 def register_converter(type_string, function):
@@ -96,10 +125,7 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
 
     if converter:
         if type_upper not in _native_converters:
-            try:
-                value = value.decode('base64')
-            except binascii.Error:
-                pass
+            value = value.decode('base64')
         value = converter(value)
     elif isinstance(value, basestring):
         value = value.decode('base64')
