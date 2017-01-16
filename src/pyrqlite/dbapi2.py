@@ -34,7 +34,7 @@ from .types import (
 )
 
 # Compat with native sqlite module
-from .extensions import converters
+from .extensions import converters, adapters, register_converter, register_adapter
 from sqlite3.dbapi2 import PrepareProtocol
 
 

@@ -34,6 +34,8 @@ adapters = {
     unicode: lambda x: x.encode('utf-8'),
     type(None): lambda x: None,
 }
+adapters = {(type_, sqlite3.PrepareProtocol): val for type_, val in adapters.items()}
+
 converters = {
     'TEXT': str,
     'VARCHAR': lambda x: x.encode('utf-8'),
@@ -56,7 +58,7 @@ def register_converter(type_string, value_string):
 
 
 def register_adapter(type_, function):
-    raise NotImplementedError()
+    adapters[(type_, sqlite3.PrepareProtocol)] = function
 
 
 def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_colnames=False):
@@ -67,6 +69,12 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
     """
     converter = None
     type_upper = None
+
+    if type_ == '':     # q="select 3.0" -> type='' column_name='3.0' value=3
+        if column_name.isdigit():
+            type_ = 'int'
+        elif all([slice.isdigit() for slice in column_name.partition('.')[::2]]):   # 3.14
+            type_ = 'real'
 
     if '[' in column_name and ']' in column_name and parse_colnames:
         type_upper = column_name.upper().partition('[')[-1].partition(']')[0]
@@ -102,7 +110,7 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
 def _adapt_from_python(value):
     if not isinstance(value, basestring):
         try:
-            adapted = adapters[type(value)](value)
+            adapted = adapters[(type(value), sqlite3.PrepareProtocol)](value)
         except KeyError, e:
             # No adapter registered. Let the object adapt itself via PEP-246.
             # It has been rejected by the BDFL, but is still implemented
