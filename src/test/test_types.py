@@ -377,7 +377,8 @@ class BinaryConverterTests(unittest.TestCase):
 
     def test_CheckBinaryInputForConverter(self):
         testdata = b"abcdefg" * 10
-        result = self.con.execute('select ? as "x [bin]"', (memoryview(zlib.compress(testdata)),)).fetchone()[0]
+        compressed = zlib.compress(testdata)
+        result = self.con.execute('select ? as "x [bin]"', (compressed,)).fetchone()[0]
         self.assertEqual(testdata, result)
 
 class DateTimeTests(unittest.TestCase):
