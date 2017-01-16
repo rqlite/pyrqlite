@@ -11,7 +11,7 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-from .exceptions import ProgrammingError, InterfaceError
+from .exceptions import Error, InterfaceError
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
@@ -114,6 +114,7 @@ class Cursor(object):
             for item in results:
                 if 'error' in item:
                     logging.error(json.dumps(item))
+                    raise Error(json.dumps(item))
                 try:
                     rows_affected += item['rows_affected']
                 except KeyError:
