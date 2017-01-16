@@ -35,7 +35,7 @@ def _adapt_datetime(val):
     return val.isoformat(b" ")
 
 def _convert_date(val):
-    return datetime.date(*map(int, val.split("-")))
+    return datetime.date(*map(int, val.split('T')[0].split("-")))
 
 def _convert_timestamp(val):
     datepart, timepart = val.split("T")
