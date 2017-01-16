@@ -94,3 +94,8 @@ class Connection(object):
     def cursor(self):
         """Return a new Cursor Object using the connection."""
         return Cursor(self)
+
+    def execute(self, *args, **kwargs):
+        with self.cursor() as cursor:
+            return cursor.execute(*args, **kwargs)
+
