@@ -54,7 +54,7 @@ def _convert_timestamp(val):
 adapters = {
     float: lambda x: x,
     int: lambda x: x,
-    bool: lambda x: int(x),
+    bool: int,
     unicode: lambda x: x.encode('utf-8'),
     type(None): lambda x: None,
     datetime.date: _adapt_date,
