@@ -23,7 +23,7 @@ from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES
 
 class Connection(object):
 
-    def __init__(self, host=None, port=None, connect_timeout=None,
+    def __init__(self, host='localhost', port=4001, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
