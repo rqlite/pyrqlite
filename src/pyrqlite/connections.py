@@ -18,11 +18,12 @@ from .constants import (
 )
 
 from .cursors import Cursor
+from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES
 
 
 class Connection(object):
 
-    def __init__(self, host=None, port=None, connect_timeout=None,
+    def __init__(self, host='localhost', port=4001, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
@@ -30,6 +31,9 @@ class Connection(object):
         self.port = port
         self.connect_timeout = connect_timeout
         self.max_redirects = max_redirects
+        self.detect_types = detect_types
+        self.parse_decltypes = detect_types & PARSE_DECLTYPES
+        self.parse_colnames = detect_types & PARSE_COLNAMES
         self._connection = self._init_connection()
 
     def _init_connection(self):
@@ -90,3 +94,8 @@ class Connection(object):
     def cursor(self):
         """Return a new Cursor Object using the connection."""
         return Cursor(self)
+
+    def execute(self, *args, **kwargs):
+        with self.cursor() as cursor:
+            return cursor.execute(*args, **kwargs)
+

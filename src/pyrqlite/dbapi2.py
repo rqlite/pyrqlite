@@ -5,7 +5,8 @@ from .constants import (
     UNLIMITED_REDIRECTS,
 )
 
-from .connections import Connection as connect
+from .connections import Connection
+connect = Connection
 
 from .exceptions import (
     Warning,
@@ -32,6 +33,11 @@ from .types import (
     ROWID,
 )
 
+# Compat with native sqlite module
+from .extensions import converters, adapters, register_converter, register_adapter
+from sqlite3.dbapi2 import PrepareProtocol
+
+
 paramstyle = "qmark"
 
 threadsafety = 1
@@ -52,3 +58,6 @@ def TimestampFromTicks(ticks):
 
 # accessed by sqlalchemy sqlite dialect
 sqlite_version_info = (3, 10, 0)
+
+# Compat with native sqlite module
+from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES

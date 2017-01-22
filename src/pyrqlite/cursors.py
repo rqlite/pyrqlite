@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import json
 import logging
+import sqlite3
 
 try:
     # pylint: disable=no-name-in-module
@@ -10,9 +11,10 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-from .exceptions import ProgrammingError
+from .exceptions import Error, InterfaceError
 
 from .row import Row
+from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
 
 
 class Cursor(object):
@@ -42,8 +44,6 @@ class Cursor(object):
     def close(self):
         self._rows = None
 
-    def _escape_string(self, s):
-        return "'%s'" % s.replace("'", "''")
 
     def _request(self, method, uri, body=None, headers={}):
         debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
@@ -72,18 +72,18 @@ class Cursor(object):
         return response_json
 
     def _substitute_params(self, operation, parameters):
+        '''
+        SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and NULL
+        '''
         subst = []
         parts = operation.split('?')
         if len(parts) - 1 != len(parameters):
-            raise ProgrammingError('incorrect number of parameters (%s != %s): %s %s' %
+            raise InterfaceError('incorrect number of parameters (%s != %s): %s %s' %
                                    (len(parts) - 1, len(parameters), operation, parameters))
         for i, part in enumerate(parts):
             subst.append(part)
             if i < len(parameters):
-                if isinstance(parameters[i], int):
-                    subst.append("{}".format(parameters[i]))
-                else:
-                    subst.append(self._escape_string(parameters[i]))
+                subst.append(_adapt_from_python(parameters[i]))
         return ''.join(subst)
 
     def _get_sql_command(self, sql_str):
@@ -114,6 +114,7 @@ class Cursor(object):
             for item in results:
                 if 'error' in item:
                     logging.error(json.dumps(item))
+                    raise Error(json.dumps(item))
                 try:
                     rows_affected += item['rows_affected']
                 except KeyError:
@@ -137,7 +138,7 @@ class Cursor(object):
             description = []
             for field in fields:
                 description.append((
-                    field,
+                    _column_stripper(field, parse_colnames=self.connection.parse_colnames),
                     None,
                     None,
                     None,
@@ -148,13 +149,16 @@ class Cursor(object):
 
             try:
                 values = payload_rows['values']
+                types = payload_rows['types']
             except KeyError:
                 pass
             else:
                 for payload_row in values:
                     row = Row()
-                    for field, value in zip(fields, payload_row):
-                        row[field] = value
+                    for field, type_, value in zip(fields, types, payload_row):
+                        row[field] = _convert_to_python(field, type_, value,
+                                                        parse_decltypes=self.connection.parse_decltypes,
+                                                        parse_colnames=self.connection.parse_colnames)
                     rows.append(row)
             self._rows = rows
             self.description = tuple(description)
@@ -166,7 +170,7 @@ class Cursor(object):
             self.rowcount = rows_affected
         else:
             self.rowcount = len(self._rows)
-        return self.rowcount
+        return self
 
     def executemany(self, operation, seq_of_parameters=None):
         statements = []
