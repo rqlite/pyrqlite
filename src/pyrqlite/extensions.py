@@ -75,7 +75,10 @@ converters = {
     'BLOB': lambda x: x,
     'DATE': _convert_date,
     'TIMESTAMP': _convert_timestamp,
-    '': lambda x: x.encode('utf-8'),
+    # For PRAGMA results, the go-sqlite3 SQLiteRows.DeclTypes method
+    # returns empty strings for all of the types, but the rows can
+    # contain int or None values that need to pass through here.
+    '': lambda x: x.encode('utf-8') if hasattr(x, 'encode') else x,
 }
 
 # Non-native converters will be decoded from base64 before fed into converter

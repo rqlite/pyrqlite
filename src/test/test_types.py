@@ -85,6 +85,18 @@ class SqliteTypeTests(unittest.TestCase):
         row = self.cur.fetchone()
         self.assertEqual(row[0], "Österreich")
 
+    def test_PragmaTableInfo(self):
+        self.cur.execute("pragma table_info('test')")
+        rows = self.cur.fetchall()
+        self.assertEqual(rows,
+            [
+                [0, 'i', 'integer', 0, None, 0],
+                [1, 's', 'varchar', 0, None, 0],
+                [2, 'f', 'number', 0, None, 0],
+                [3, 'b', 'blob', 0, None, 0],
+            ]
+        )
+
 class DeclTypesTests(unittest.TestCase):
     class Foo:
         def __init__(self, _val):

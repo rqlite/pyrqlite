@@ -95,7 +95,7 @@ class Cursor(object):
             operation = self._substitute_params(operation, parameters)
 
         command = self._get_sql_command(operation)
-        if command == 'SELECT':
+        if command in ('SELECT', 'PRAGMA'):
             payload = self._request("GET",
                                     "/db/query?" + urlencode({'q': operation}))
         else:
