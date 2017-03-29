@@ -51,7 +51,7 @@ class SqliteTypeTests(unittest.TestCase):
         self.cur.execute("insert into test(s) values (?)", ("Österreich",))
         self.cur.execute("select s from test")
         row = self.cur.fetchone()
-        self.assertEqual(row[0], "Österreich")
+        self.assertEqual(row[0], u"Österreich")
 
     def test_CheckSmallInt(self):
         self.cur.execute("insert into test(i) values (?)", (42,))

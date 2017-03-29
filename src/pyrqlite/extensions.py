@@ -11,6 +11,7 @@ Adapters transforms Python native types to RQLite-aware values.
 import binascii
 import datetime
 import numbers
+import re
 import sqlite3
 
 from .exceptions import InterfaceError
@@ -64,8 +65,6 @@ adapters = {
 adapters = {(type_, sqlite3.PrepareProtocol): val for type_, val in adapters.items()}
 
 converters = {
-    'TEXT': str,
-    'VARCHAR': lambda x: x.encode('utf-8'),
     'UNICODE': lambda x: x.decode('utf-8'),
     'INTEGER': int,
     'BOOL': bool,
@@ -82,7 +81,10 @@ converters = {
 }
 
 # Non-native converters will be decoded from base64 before fed into converter
-_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'TEXT', 'VARCHAR', 'NULL', 'DATE', 'TIMESTAMP', '')
+_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'NULL', 'DATE', 'TIMESTAMP', '')
+
+# SQLite TEXT affinity: https://www.sqlite.org/datatype3.html
+_text_affinity_re = re.compile(r'CHAR|CLOB|TEXT')
 
 
 def register_converter(type_string, function):
@@ -130,6 +132,10 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
         if type_upper not in _native_converters:
             value = value.decode('base64')
         value = converter(value)
+    elif _text_affinity_re.search(type_upper):
+        # Python's sqlite3 module has a text_factory attribute which
+        # returns unicode by default.
+        pass
     elif isinstance(value, basestring):
         value = value.decode('base64')
 
