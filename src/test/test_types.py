@@ -34,7 +34,8 @@ class SqliteTypeTests(unittest.TestCase):
     def setUp(self):
         con = sqlite.connect()
         cur = con.cursor()
-        cur.execute("drop table test")
+        if cur.execute("pragma table_info(test)").fetchall():
+            cur.execute("drop table test")
         cur.close()
         con.close()
 
@@ -123,7 +124,8 @@ class DeclTypesTests(unittest.TestCase):
     def setUp(self):
         con = sqlite.connect()
         cur = con.cursor()
-        cur.execute("drop table test")
+        if cur.execute("pragma table_info(test)").fetchall():
+            cur.execute("drop table test")
         cur.close()
         con.close()
 
@@ -244,7 +246,8 @@ class ColNamesTests(unittest.TestCase):
     def setUp(self):
         con = sqlite.connect()
         cur = con.cursor()
-        cur.execute("drop table test")
+        if cur.execute("pragma table_info(test)").fetchall():
+            cur.execute("drop table test")
         cur.close()
         con.close()
 
@@ -315,7 +318,8 @@ class CommonTableExpressionTests(unittest.TestCase):
     def setUp(self):
         con = sqlite.connect()
         cur = con.cursor()
-        cur.execute("drop table test")
+        if cur.execute("pragma table_info(test)").fetchall():
+            cur.execute("drop table test")
         cur.close()
         con.close()
 
@@ -397,7 +401,8 @@ class DateTimeTests(unittest.TestCase):
     def setUp(self):
         con = sqlite.connect()
         cur = con.cursor()
-        cur.execute("drop table test")
+        if cur.execute("pragma table_info(test)").fetchall():
+            cur.execute("drop table test")
         cur.close()
         con.close()
 
