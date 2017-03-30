@@ -24,7 +24,10 @@
 from __future__ import print_function
 
 import sys
-from test import test_support
+try:
+    import test.support as test_support
+except ImportError:
+    from test import test_support
 import unittest
 try:
     import threading
@@ -660,8 +663,10 @@ class ConstructorTests(unittest.TestCase):
         ts = sqlite.TimestampFromTicks(42)
 
     def test_CheckBinary(self):
-        with test_support.check_py3k_warnings():
-            b = sqlite.Binary(chr(0) + "'")
+        with (test_support.check_warnings() if sys.version_info[0] >= 3
+            else test_support.check_py3k_warnings()):
+            b = sqlite.Binary(chr(0).encode() + b"'"
+                if sys.version_info[0] >= 3 else chr(0) + b"'")
 
 class ExtensionTests(unittest.TestCase):
     def test_CheckScriptStringSql(self):

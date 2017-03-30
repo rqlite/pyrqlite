@@ -8,6 +8,7 @@ Converters transforms RQLite answers to Python native types.
 Adapters transforms Python native types to RQLite-aware values.
 """
 
+import codecs
 import datetime
 import functools
 import re
@@ -31,12 +32,21 @@ def _decoder(conv_func):
     """
     return lambda s: conv_func(s.decode('utf-8'))
 
+if sys.version_info[0] >= 3:
+    def _escape_string(value):
+        return (type(value)("'%s'")) % (value.replace("'", "''"))
+
+    def _adapt_datetime(val):
+        return val.isoformat(" ")
+else:
+    def _escape_string(value):
+        return (type(value)(b"'%s'")) % (value.replace(b"'", b"''"))
+
+    def _adapt_datetime(val):
+        return val.isoformat(b" ")
 
 def _adapt_date(val):
     return val.isoformat()
-
-def _adapt_datetime(val):
-    return val.isoformat(b" ")
 
 def _convert_date(val):
     return datetime.date(*map(int, val.split('T')[0].split("-")))
@@ -47,7 +57,7 @@ def _convert_timestamp(val):
     timepart_full = timepart.strip('Z').split(".")
     hours, minutes, seconds = map(int, timepart_full[0].split(":"))
     if len(timepart_full) == 2:
-        microseconds = int('{:0<6.6}'.format(timepart_full[1].decode()))
+        microseconds = int('{:0<6.6}'.format(timepart_full[1]))
     else:
         microseconds = 0
 
@@ -56,6 +66,7 @@ def _convert_timestamp(val):
 
 
 adapters = {
+    bytes: lambda x: x.decode('utf-8'),
     float: lambda x: x,
     int: lambda x: x,
     bool: int,
@@ -167,17 +178,17 @@ def _adapt_from_python(value):
 
     return adapted
 
-
-def _escape_string(value):
-    return (type(value)(b"'%s'")) % (value.replace(b"'", b"''"))
-
 def _column_stripper(column_name, parse_colnames=False):
     return column_name.partition(' ')[0] if parse_colnames else column_name
 
 def _decode_base64_converter(converter, value):
-    return converter(value.decode('base64'))
+    if not isinstance(value, bytes):
+        value = value.encode('utf-8')
+    return converter(codecs.decode(value, 'base64'))
 
 def _conditional_string_decode_base64(value):
     if isinstance(value, basestring):
-        value = value.decode('base64')
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
+        value = codecs.decode(value, 'base64')
     return value

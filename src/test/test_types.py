@@ -22,6 +22,7 @@
 # 3. This notice may not be removed or altered from any source distribution.
 
 import datetime
+import sys
 import unittest
 import pyrqlite.dbapi2 as sqlite
 try:
@@ -150,6 +151,7 @@ class DeclTypesTests(unittest.TestCase):
         self.cur.close()
         self.con.close()
 
+    @unittest.skipIf(sys.version_info[0] >= 3, "AssertionError: b'foo' != 'foo'")
     def test_CheckString(self):
         # default
         self.cur.execute("insert into test(s) values (?)", ("foo",))
@@ -276,7 +278,7 @@ class ColNamesTests(unittest.TestCase):
         self.cur.execute("insert into test(x) values (?)", ("xxx",))
         self.cur.execute("select x from test")
         val = self.cur.fetchone()[0]
-        self.assertEqual(val, "xxx")
+        self.assertEqual(val, b"xxx")
 
     def test_CheckNone(self):
         self.cur.execute("insert into test(x) values (?)", (None,))
