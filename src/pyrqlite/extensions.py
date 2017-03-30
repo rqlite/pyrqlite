@@ -10,6 +10,7 @@ Adapters transforms Python native types to RQLite-aware values.
 
 import binascii
 import datetime
+import functools
 import numbers
 import re
 import sqlite3
@@ -95,7 +96,7 @@ def register_adapter(type_, function):
     adapters[(type_, sqlite3.PrepareProtocol)] = function
 
 
-def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_colnames=False):
+def _convert_to_python(column_name, type_, parse_decltypes=False, parse_colnames=False):
     """
     Tries to mimic stock sqlite3 module behaviours.
 
@@ -130,16 +131,15 @@ def _convert_to_python(column_name, type_, value, parse_decltypes=False, parse_c
 
     if converter:
         if type_upper not in _native_converters:
-            value = value.decode('base64')
-        value = converter(value)
+            converter = functools.partial(_decode_base64_converter, converter)
     elif _text_affinity_re.search(type_upper):
         # Python's sqlite3 module has a text_factory attribute which
         # returns unicode by default.
         pass
-    elif isinstance(value, basestring):
-        value = value.decode('base64')
+    else:
+        converter = _conditional_string_decode_base64
 
-    return value
+    return converter
 
 
 def _adapt_from_python(value):
@@ -176,4 +176,10 @@ def _escape_string(value):
 def _column_stripper(column_name, parse_colnames=False):
     return column_name.partition(' ')[0] if parse_colnames else column_name
 
+def _decode_base64_converter(converter, value):
+    return converter(value.decode('base64'))
 
+def _conditional_string_decode_base64(value):
+    if isinstance(value, basestring):
+        value = value.decode('base64')
+    return value
