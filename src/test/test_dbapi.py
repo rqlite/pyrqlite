@@ -21,6 +21,8 @@
 #    misrepresented as being the original software.
 # 3. This notice may not be removed or altered from any source distribution.
 
+import sys
+from test import test_support
 import unittest
 try:
     import threading
