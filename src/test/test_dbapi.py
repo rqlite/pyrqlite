@@ -21,6 +21,8 @@
 #    misrepresented as being the original software.
 # 3. This notice may not be removed or altered from any source distribution.
 
+from __future__ import print_function
+
 import sys
 from test import test_support
 import unittest
@@ -380,8 +382,8 @@ class CursorTests(unittest.TestCase):
             self.fail("should have raised a TypeError")
         except TypeError:
             return
-        except Exception, e:
-            print "raised", e.__class__
+        except Exception as e:
+            print("raised", e.__class__)
             self.fail("raised wrong exception.")
 
     def test_CheckFetchIter(self):
