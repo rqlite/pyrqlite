@@ -32,6 +32,10 @@ except ImportError:
     threading = None
 import pyrqlite.dbapi2 as sqlite
 
+if sys.version_info[0] >= 3:
+    StandardError = Exception
+
+
 class ModuleTests(unittest.TestCase):
     def test_CheckAPILevel(self):
         self.assertEqual(sqlite.apilevel, "2.0",
