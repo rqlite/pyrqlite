@@ -14,9 +14,13 @@ import functools
 import numbers
 import re
 import sqlite3
+import sys
 
 from .exceptions import InterfaceError
 
+if sys.version_info[0] >= 3:
+    basestring = str
+    unicode = str
 
 PARSE_DECLTYPES = 1
 PARSE_COLNAMES = 2
@@ -146,7 +150,7 @@ def _adapt_from_python(value):
     if not isinstance(value, basestring):
         try:
             adapted = adapters[(type(value), sqlite3.PrepareProtocol)](value)
-        except KeyError, e:
+        except KeyError as e:
             # No adapter registered. Let the object adapt itself via PEP-246.
             # It has been rejected by the BDFL, but is still implemented
             # on stdlib sqlite3 module even on Python 3 !!
