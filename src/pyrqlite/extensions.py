@@ -79,14 +79,10 @@ converters = {
     'BLOB': lambda x: x,
     'DATE': _convert_date,
     'TIMESTAMP': _convert_timestamp,
-    # For PRAGMA results, the go-sqlite3 SQLiteRows.DeclTypes method
-    # returns empty strings for all of the types, but the rows can
-    # contain int or None values that need to pass through here.
-    '': lambda x: x.encode('utf-8') if hasattr(x, 'encode') else x,
 }
 
 # Non-native converters will be decoded from base64 before fed into converter
-_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'NULL', 'DATE', 'TIMESTAMP', '')
+_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'NULL', 'DATE', 'TIMESTAMP')
 
 # SQLite TEXT affinity: https://www.sqlite.org/datatype3.html
 _text_affinity_re = re.compile(r'CHAR|CLOB|TEXT')
@@ -136,7 +132,7 @@ def _convert_to_python(column_name, type_, parse_decltypes=False, parse_colnames
     if converter:
         if type_upper not in _native_converters:
             converter = functools.partial(_decode_base64_converter, converter)
-    elif _text_affinity_re.search(type_upper):
+    elif not type_upper or _text_affinity_re.search(type_upper):
         # Python's sqlite3 module has a text_factory attribute which
         # returns unicode by default.
         pass

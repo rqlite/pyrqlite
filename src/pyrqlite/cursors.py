@@ -3,6 +3,7 @@ from collections import OrderedDict
 import json
 import logging
 import sqlite3
+import sys
 
 try:
     # pylint: disable=no-name-in-module
@@ -15,6 +16,17 @@ from .exceptions import Error, InterfaceError
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
+
+
+if sys.version_info[0] >= 3:
+    _urlencode = urlencode
+else:
+    # avoid UnicodeEncodeError from urlencode
+    def _urlencode(query, doseq=0):
+        return urlencode(dict(
+            (k if isinstance(k, bytes) else k.encode('utf-8'),
+            v if isinstance(v, bytes) else v.encode('utf-8'))
+            for k, v in query.items()), doseq=doseq)
 
 
 class Cursor(object):
@@ -97,7 +109,7 @@ class Cursor(object):
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
             payload = self._request("GET",
-                                    "/db/query?" + urlencode({'q': operation}))
+                                    "/db/query?" + _urlencode({'q': operation}))
         else:
             payload = self._request("POST", "/db/execute?transaction",
                                     headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))

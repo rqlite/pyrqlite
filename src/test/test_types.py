@@ -82,9 +82,9 @@ class SqliteTypeTests(unittest.TestCase):
         self.assertEqual(row[0], sample)
 
     def test_CheckUnicodeExecute(self):
-        self.cur.execute("select 'Österreich'")
+        self.cur.execute(u"select 'Österreich'")
         row = self.cur.fetchone()
-        self.assertEqual(row[0], "Österreich")
+        self.assertEqual(row[0], u"Österreich")
 
     def test_PragmaTableInfo(self):
         self.cur.execute("pragma table_info('test')")
