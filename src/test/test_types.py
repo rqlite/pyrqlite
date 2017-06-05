@@ -91,10 +91,10 @@ class SqliteTypeTests(unittest.TestCase):
         rows = self.cur.fetchall()
         self.assertEqual(rows,
             [
-                [0, 'i', 'integer', 0, None, 0],
-                [1, 's', 'varchar', 0, None, 0],
-                [2, 'f', 'number', 0, None, 0],
-                [3, 'b', 'blob', 0, None, 0],
+                (0, 'i', 'integer', 0, None, 0),
+                (1, 's', 'varchar', 0, None, 0),
+                (2, 'f', 'number', 0, None, 0),
+                (3, 'b', 'blob', 0, None, 0),
             ]
         )
 

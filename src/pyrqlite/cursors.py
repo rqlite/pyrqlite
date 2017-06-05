@@ -159,12 +159,12 @@ class Cursor(object):
                         parse_colnames=self.connection.parse_colnames)
                         for field, type_ in zip(fields, types)]
                     for payload_row in values:
-                        row = Row()
+                        row = []
                         for field, converter, value in zip(
                             fields, converters, payload_row):
-                            row[field] = (value if converter is None
-                                else converter(value))
-                        rows.append(row)
+                            row.append((field, (value if converter is None
+                                else converter(value))))
+                        rows.append(Row(row))
             self._rows = rows
             self.description = tuple(description)
 

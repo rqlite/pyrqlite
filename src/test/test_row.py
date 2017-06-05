@@ -3,16 +3,12 @@ from pyrqlite.row import Row
 
 
 def test_row():
-    row = Row()
-    assert len(row) == 0
-    row['foo'] = 'foo'
-    row['bar'] = 'bar'
+    row = Row([('foo', 'foo'), ('bar', 'bar')])
+    assert len(row) == 2
     assert row['foo'] == 'foo'
     assert row['bar'] == 'bar'
     assert row[0] == 'foo'
     assert row[1] == 'bar'
-
-    assert len(row) == 2
 
     try:
         row[2]

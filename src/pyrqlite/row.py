@@ -8,27 +8,26 @@ except ImportError:
 from collections import OrderedDict
 
 
-class Row(list, Mapping):
+class Row(tuple, Mapping):
 
-    def __init__(self):
+    def __new__(cls, items):
+        return tuple.__new__(cls, (item[1] for item in items))
+
+    def __init__(self, items):
         super(Row, self).__init__()
-        self._dict = OrderedDict()
-
-    def __setitem__(self, k, v):
-        self.append(v)
-        self._dict[k] = v
+        self._dict = OrderedDict(items)
 
     def __getitem__(self, k):
         try:
             return self._dict[k]
         except KeyError:
             if isinstance(k, int):
-                return list.__getitem__(self, k)
+                return tuple.__getitem__(self, k)
             else:
                 raise
 
     def __iter__(self):
-        return list.__iter__(self)
+        return tuple.__iter__(self)
 
     def keys(self):
         for k in self._dict:
@@ -36,7 +35,7 @@ class Row(list, Mapping):
                 yield k
 
     def __len__(self):
-        return list.__len__(self)
+        return tuple.__len__(self)
 
     def __str__(self):
         return str(self._dict)
