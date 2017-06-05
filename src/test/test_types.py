@@ -48,7 +48,7 @@ class SqliteTypeTests(unittest.TestCase):
         self.con.close()
 
     def test_CheckString(self):
-        self.cur.execute("insert into test(s) values (?)", ("Österreich",))
+        self.cur.execute("insert into test(s) values (?)", (u"Österreich",))
         self.cur.execute("select s from test")
         row = self.cur.fetchone()
         self.assertEqual(row[0], u"Österreich")
