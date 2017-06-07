@@ -8,10 +8,8 @@ Converters transforms RQLite answers to Python native types.
 Adapters transforms Python native types to RQLite-aware values.
 """
 
-import binascii
 import datetime
 import functools
-import numbers
 import re
 import sqlite3
 import sys
