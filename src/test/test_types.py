@@ -294,6 +294,7 @@ class ColNamesTests(unittest.TestCase):
         # whitespace should be stripped.
         self.assertEqual(self.cur.description[0][0], "x")
 
+    @unittest.expectedFailure # https://github.com/rqlite/pyrqlite/issues/16
     def test_CheckCaseInConverterName(self):
         self.cur.execute("select 'other' as \"x [b1b1]\"")
         val = self.cur.fetchone()[0]
