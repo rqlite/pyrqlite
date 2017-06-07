@@ -392,6 +392,7 @@ class BinaryConverterTests(unittest.TestCase):
     def tearDown(self):
         self.con.close()
 
+    @unittest.expectedFailure # https://github.com/rqlite/pyrqlite/issues/17
     def test_CheckBinaryInputForConverter(self):
         testdata = b"abcdefg" * 10
         compressed = zlib.compress(testdata)
