@@ -457,17 +457,18 @@ class DateTimeTests(unittest.TestCase):
         self.assertEqual(ts, ts2)
 
 def suite():
-    sqlite_type_suite = unittest.makeSuite(SqliteTypeTests, "Check")
-    decltypes_type_suite = unittest.makeSuite(DeclTypesTests, "Check")
-    colnames_type_suite = unittest.makeSuite(ColNamesTests, "Check")
-    adaptation_suite = unittest.makeSuite(ObjectAdaptationTests, "Check")
-    bin_suite = unittest.makeSuite(BinaryConverterTests, "Check")
-    date_suite = unittest.makeSuite(DateTimeTests, "Check")
-    cte_suite = unittest.makeSuite(CommonTableExpressionTests, "Check")
+    loader = unittest.TestLoader()
+    sqlite_type_suite = loader.loadTestsFromTestCase(SqliteTypeTests)
+    decltypes_type_suite = loader.loadTestsFromTestCase(DeclTypesTests)
+    colnames_type_suite = loader.loadTestsFromTestCase(ColNamesTests)
+    adaptation_suite = loader.loadTestsFromTestCase(ObjectAdaptationTests)
+    bin_suite = loader.loadTestsFromTestCase(BinaryConverterTests)
+    date_suite = loader.loadTestsFromTestCase(DateTimeTests)
+    cte_suite = loader.loadTestsFromTestCase(CommonTableExpressionTests)
     return unittest.TestSuite((sqlite_type_suite, decltypes_type_suite, colnames_type_suite, adaptation_suite, bin_suite, date_suite, cte_suite))
 
 def test():
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
 
 if __name__ == "__main__":
