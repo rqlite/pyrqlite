@@ -884,18 +884,19 @@ class ClosedCurTests(unittest.TestCase):
                 self.fail("Should have raised a ProgrammingError: " + method_name)
 
 def suite():
-    module_suite = unittest.makeSuite(ModuleTests, "Check")
-    connection_suite = unittest.makeSuite(ConnectionTests, "Check")
-    cursor_suite = unittest.makeSuite(CursorTests, "Check")
-    thread_suite = unittest.makeSuite(ThreadTests, "Check")
-    constructor_suite = unittest.makeSuite(ConstructorTests, "Check")
-    ext_suite = unittest.makeSuite(ExtensionTests, "Check")
-    closed_con_suite = unittest.makeSuite(ClosedConTests, "Check")
-    closed_cur_suite = unittest.makeSuite(ClosedCurTests, "Check")
+    loader = unittest.TestLoader()
+    module_suite = loader.loadTestsFromTestCase(ModuleTests)
+    connection_suite = loader.loadTestsFromTestCase(ConnectionTests)
+    cursor_suite = loader.loadTestsFromTestCase(CursorTests)
+    thread_suite = loader.loadTestsFromTestCase(ThreadTests)
+    constructor_suite = loader.loadTestsFromTestCase(ConstructorTests)
+    ext_suite = loader.loadTestsFromTestCase(ExtensionTests)
+    closed_con_suite = loader.loadTestsFromTestCase(ClosedConTests)
+    closed_cur_suite = loader.loadTestsFromTestCase(ClosedCurTests)
     return unittest.TestSuite((module_suite, connection_suite, cursor_suite, thread_suite, constructor_suite, ext_suite, closed_con_suite, closed_cur_suite))
 
 def test():
-    runner = unittest.TextTestRunner()
+    runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
 
 if __name__ == "__main__":
