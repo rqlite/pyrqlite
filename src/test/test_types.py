@@ -32,21 +32,23 @@ except ImportError:
 
 
 class SqliteTypeTests(unittest.TestCase):
-    def setUp(self):
-        con = sqlite.connect()
-        cur = con.cursor()
-        if cur.execute("pragma table_info(test)").fetchall():
-            cur.execute("drop table test")
-        cur.close()
-        con.close()
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect()
+        cls.cur = cls.con.cursor()
+        if cls.cur.execute("pragma table_info(test)").fetchall():
+            cls.cur.execute("drop table test")
 
-        self.con = sqlite.connect()
-        self.cur = self.con.cursor()
+    def setUp(self):
         self.cur.execute("create table test(i integer, s varchar, f number, b blob)")
 
     def tearDown(self):
-        self.cur.close()
-        self.con.close()
+        self.cur.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cur.close()
+        cls.con.close()
 
     def test_CheckString(self):
         self.cur.execute("insert into test(s) values (?)", (u"Österreich",))
@@ -122,17 +124,12 @@ class DeclTypesTests(unittest.TestCase):
         def __str__(self):
             return "<%s>" % self.val
 
-    def setUp(self):
-        con = sqlite.connect()
-        cur = con.cursor()
-        if cur.execute("pragma table_info(test)").fetchall():
-            cur.execute("drop table test")
-        cur.close()
-        con.close()
-
-        self.con = sqlite.connect(detect_types=sqlite.PARSE_DECLTYPES)
-        self.cur = self.con.cursor()
-        self.cur.execute("create table test(i int, s str, f float, b bool, u unicode, foo foo, bin blob, n1 number, n2 number(5))")
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(detect_types=sqlite.PARSE_DECLTYPES)
+        cls.cur = cls.con.cursor()
+        if cls.cur.execute("pragma table_info(test)").fetchall():
+            cls.cur.execute("drop table test")
 
         # override float, make them always return the same number
         sqlite.converters["FLOAT"] = lambda x: 47.2
@@ -143,13 +140,21 @@ class DeclTypesTests(unittest.TestCase):
         sqlite.converters["WRONG"] = lambda x: "WRONG"
         sqlite.converters["NUMBER"] = float
 
+    def setUp(self):
+        self.cur.execute("create table test(i int, s str, f float, b bool, u unicode, foo foo, bin blob, n1 number, n2 number(5))")
+
     def tearDown(self):
+        self.cur.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
         del sqlite.converters["FLOAT"]
         del sqlite.converters["BOOL"]
         del sqlite.converters["FOO"]
+        del sqlite.converters["WRONG"]
         del sqlite.converters["NUMBER"]
-        self.cur.close()
-        self.con.close()
+        cls.cur.close()
+        cls.con.close()
 
     @unittest.skipIf(sys.version_info[0] >= 3, "AssertionError: b'foo' != 'foo'")
     def test_CheckString(self):
@@ -245,30 +250,32 @@ class DeclTypesTests(unittest.TestCase):
         self.assertEqual(type(value), float)
 
 class ColNamesTests(unittest.TestCase):
-    def setUp(self):
-        con = sqlite.connect()
-        cur = con.cursor()
-        if cur.execute("pragma table_info(test)").fetchall():
-            cur.execute("drop table test")
-        cur.close()
-        con.close()
-
-        self.con = sqlite.connect(detect_types=sqlite.PARSE_COLNAMES)
-        self.cur = self.con.cursor()
-        self.cur.execute("create table test(x foo)")
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(detect_types=sqlite.PARSE_COLNAMES)
+        cls.cur = cls.con.cursor()
+        if cls.cur.execute("pragma table_info(test)").fetchall():
+            cls.cur.execute("drop table test")
 
         sqlite.converters["FOO"] = lambda x: "[%s]" % x.decode("ascii")
         sqlite.converters["BAR"] = lambda x: "<%s>" % x.decode("ascii")
         sqlite.converters["EXC"] = lambda x: 5/0
         sqlite.converters["B1B1"] = lambda x: "MARKER"
 
+    def setUp(self):
+        self.cur.execute("create table test(x foo)")
+
     def tearDown(self):
+        self.cur.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
         del sqlite.converters["FOO"]
         del sqlite.converters["BAR"]
         del sqlite.converters["EXC"]
         del sqlite.converters["B1B1"]
-        self.cur.close()
-        self.con.close()
+        cls.cur.close()
+        cls.con.close()
 
     def test_CheckDeclTypeNotUsed(self):
         """
@@ -318,21 +325,23 @@ class ColNamesTests(unittest.TestCase):
 @unittest.skipIf(sqlite.sqlite_version_info < (3, 8, 3), "CTEs not supported")
 class CommonTableExpressionTests(unittest.TestCase):
 
-    def setUp(self):
-        con = sqlite.connect()
-        cur = con.cursor()
-        if cur.execute("pragma table_info(test)").fetchall():
-            cur.execute("drop table test")
-        cur.close()
-        con.close()
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect()
+        cls.cur = cls.con.cursor()
+        if cls.cur.execute("pragma table_info(test)").fetchall():
+            cls.cur.execute("drop table test")
 
-        self.con = sqlite.connect()
-        self.cur = self.con.cursor()
+    def setUp(self):
         self.cur.execute("create table test(x foo)")
 
     def tearDown(self):
-        self.cur.close()
-        self.con.close()
+        self.cur.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cur.close()
+        cls.con.close()
 
     ## Disabled until this is resolved: https://github.com/rqlite/rqlite/issues/255
     # def test_CheckCursorDescriptionCTESimple(self):
@@ -362,19 +371,23 @@ class ObjectAdaptationTests(unittest.TestCase):
         return float(obj)
     cast = staticmethod(cast)
 
-    def setUp(self):
-        self.con = sqlite.connect()
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect()
+        cls.cur = cls.con.cursor()
+        if cls.cur.execute("pragma table_info(test)").fetchall():
+            cls.cur.execute("drop table test")
         try:
             del sqlite.adapters[int]
         except:
             pass
         sqlite.register_adapter(int, ObjectAdaptationTests.cast)
-        self.cur = self.con.cursor()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         del sqlite.adapters[(int, sqlite.PrepareProtocol)]
-        self.cur.close()
-        self.con.close()
+        cls.cur.close()
+        cls.con.close()
 
     def test_CheckCasterIsUsed(self):
         self.cur.execute("select ?", (4,))
@@ -387,12 +400,16 @@ class BinaryConverterTests(unittest.TestCase):
         return zlib.decompress(s)
     convert = staticmethod(convert)
 
-    def setUp(self):
-        self.con = sqlite.connect(detect_types=sqlite.PARSE_COLNAMES)
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(detect_types=sqlite.PARSE_COLNAMES)
+        if cls.con.execute("pragma table_info(test)").fetchall():
+            cls.con.execute("drop table test")
         sqlite.register_converter("bin", BinaryConverterTests.convert)
 
-    def tearDown(self):
-        self.con.close()
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.close()
 
     @unittest.expectedFailure # https://github.com/rqlite/pyrqlite/issues/17
     def test_CheckBinaryInputForConverter(self):
@@ -402,21 +419,23 @@ class BinaryConverterTests(unittest.TestCase):
         self.assertEqual(testdata, result)
 
 class DateTimeTests(unittest.TestCase):
-    def setUp(self):
-        con = sqlite.connect()
-        cur = con.cursor()
-        if cur.execute("pragma table_info(test)").fetchall():
-            cur.execute("drop table test")
-        cur.close()
-        con.close()
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(detect_types=sqlite.PARSE_DECLTYPES)
+        cls.cur = cls.con.cursor()
+        if cls.cur.execute("pragma table_info(test)").fetchall():
+            cls.cur.execute("drop table test")
 
-        self.con = sqlite.connect(detect_types=sqlite.PARSE_DECLTYPES)
-        self.cur = self.con.cursor()
+    def setUp(self):
         self.cur.execute("create table test(d date, ts timestamp)")
 
     def tearDown(self):
-        self.cur.close()
-        self.con.close()
+        self.cur.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cur.close()
+        cls.con.close()
 
     def test_CheckSqliteDate(self):
         d = sqlite.Date(2004, 2, 14)
