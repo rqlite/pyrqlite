@@ -349,12 +349,17 @@ class CursorTests(unittest.TestCase):
             def __init__(self):
                 self.value = 5
 
-            def next(self):
+            def __iter__(self):
+                return self
+
+            def __next__(self):
                 if self.value == 10:
                     raise StopIteration
                 else:
                     self.value += 1
                     return (self.value,)
+
+            next = __next__
 
         self.cu.executemany("insert into test(income) values (?)", MyIter())
 
