@@ -95,14 +95,22 @@ class ModuleTests(unittest.TestCase):
                         "NotSupportedError is not a subclass of DatabaseError")
 
 class ConnectionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cx = sqlite.connect(":memory:")
+
     def setUp(self):
-        self.cx = sqlite.connect(":memory:")
         cu = self.cx.cursor()
         cu.execute("create table test(id integer primary key, name text)")
         cu.execute("insert into test(name) values (?)", ("foo",))
 
     def tearDown(self):
-        self.cx.close()
+        self.cx.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cx.close()
+        del cls.cx
 
     def test_CheckCommit(self):
         self.cx.commit()
@@ -136,7 +144,10 @@ class ConnectionTests(unittest.TestCase):
         self.fail("should have raised an OperationalError")
 
     def test_CheckClose(self):
-        self.cx.close()
+        # This would interfere with other tests, and
+        # tearDownClass exercises it already.
+        #self.cx.close()
+        pass
 
     def test_CheckExceptions(self):
         # Optional DB-API extension.
@@ -152,15 +163,23 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(self.cx.NotSupportedError, sqlite.NotSupportedError)
 
 class CursorTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cx = sqlite.connect(":memory:")
+
     def setUp(self):
-        self.cx = sqlite.connect(":memory:")
         self.cu = self.cx.cursor()
         self.cu.execute("create table test(id integer primary key, name text, income number)")
         self.cu.execute("insert into test(name) values (?)", ("foo",))
 
     def tearDown(self):
         self.cu.close()
-        self.cx.close()
+        self.cx.execute("drop table test")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cx.close()
+        del cls.cx
 
     def test_CheckExecuteNoArgs(self):
         self.cu.execute("delete from test")
@@ -309,6 +328,7 @@ class CursorTests(unittest.TestCase):
 
     def test_CheckClose(self):
         self.cu.close()
+        self.cu = self.cx.cursor()
 
     def test_CheckRowcountExecute(self):
         self.cu.execute("delete from test")
@@ -492,14 +512,22 @@ class CursorTests(unittest.TestCase):
 
 @unittest.skipUnless(threading, 'This test requires threading.')
 class ThreadTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(":memory:")
+
     def setUp(self):
-        self.con = sqlite.connect(":memory:")
         self.cur = self.con.cursor()
         self.cur.execute("create table test(id integer primary key, name text, bin binary, ratio number, ts timestamp)")
 
     def tearDown(self):
+        self.cur.execute("drop table test")
         self.cur.close()
-        self.con.close()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.close()
+        del cls.con
 
     def test_CheckConCursor(self):
         def run(con, errors):
