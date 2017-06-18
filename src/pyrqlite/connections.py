@@ -20,6 +20,7 @@ from .constants import (
 )
 
 from .cursors import Cursor
+from ._ephemeral import EphemeralRqlited as _EphemeralRqlited
 from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES
 
 
@@ -38,7 +39,7 @@ class Connection(object):
         NotSupportedError,
     )
 
-    def __init__(self, host='localhost', port=4001, connect_timeout=None,
+    def __init__(self, host=':memory:', port=4001, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
@@ -49,6 +50,10 @@ class Connection(object):
         self.detect_types = detect_types
         self.parse_decltypes = detect_types & PARSE_DECLTYPES
         self.parse_colnames = detect_types & PARSE_COLNAMES
+        self._ephemeral = None
+        if host == ':memory:':
+            self._ephemeral = _EphemeralRqlited().__enter__()
+            self.host, self.port = self._ephemeral.http
         self._connection = self._init_connection()
 
     def _init_connection(self):
@@ -95,6 +100,12 @@ class Connection(object):
         a connection without committing the changes first will cause an
         implicit rollback to be performed."""
         self._connection.close()
+        if self._ephemeral is not None:
+            self._ephemeral.__exit__(None, None, None)
+            self._ephemeral = None
+
+    def __del__(self):
+        self.close()
 
     def commit(self):
         """Database modules that do not support transactions should
