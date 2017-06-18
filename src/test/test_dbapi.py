@@ -702,9 +702,22 @@ class ConstructorTests(unittest.TestCase):
                 if sys.version_info[0] >= 3 else chr(0) + b"'")
 
 class ExtensionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(":memory:")
+
+    def tearDown(self):
+        for row in self.con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+            self.con.execute("drop table '{}'".format(row[0]))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.close()
+        del cls.con
+
     def test_CheckScriptStringSql(self):
-        con = sqlite.connect(":memory:")
-        cur = con.cursor()
+        cur = self.con.cursor()
         cur.executescript("""
             -- bla bla
             /* a stupid comment */
@@ -716,8 +729,7 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(res, 5)
 
     def test_CheckScriptStringUnicode(self):
-        con = sqlite.connect(":memory:")
-        cur = con.cursor()
+        cur = self.con.cursor()
         cur.executescript(u"""
             create table a(i);
             insert into a(i) values (5);
@@ -730,8 +742,7 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(res, 6)
 
     def test_CheckScriptSyntaxError(self):
-        con = sqlite.connect(":memory:")
-        cur = con.cursor()
+        cur = self.con.cursor()
         raised = False
         try:
             cur.executescript("create table test(x); asdf; create table test2(x)")
@@ -740,8 +751,7 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(raised, True, "should have raised an exception")
 
     def test_CheckScriptErrorNormal(self):
-        con = sqlite.connect(":memory:")
-        cur = con.cursor()
+        cur = self.con.cursor()
         raised = False
         try:
             cur.executescript("create table test(sadfsadfdsa); select foo from hurz;")
@@ -750,12 +760,11 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(raised, True, "should have raised an exception")
 
     def test_CheckConnectionExecute(self):
-        con = sqlite.connect(":memory:")
-        result = con.execute("select 5").fetchone()[0]
+        result = self.con.execute("select 5").fetchone()[0]
         self.assertEqual(result, 5, "Basic test of Connection.execute")
 
     def test_CheckConnectionExecutemany(self):
-        con = sqlite.connect(":memory:")
+        con = self.con
         con.execute("create table test(foo)")
         con.executemany("insert into test(foo) values (?)", [(3,), (4,)])
         result = con.execute("select foo from test order by foo").fetchall()
@@ -763,7 +772,7 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(result[1][0], 4, "Basic test of Connection.executemany")
 
     def test_CheckConnectionExecutescript(self):
-        con = sqlite.connect(":memory:")
+        con = self.con
         con.executescript("create table test(foo); insert into test(foo) values (5);")
         result = con.execute("select foo from test").fetchone()[0]
         self.assertEqual(result, 5, "Basic test of Connection.executescript")
