@@ -23,6 +23,19 @@ from .extensions import PARSE_DECLTYPES, PARSE_COLNAMES
 
 class Connection(object):
 
+    from .exceptions import (
+        Warning,
+        Error,
+        InterfaceError,
+        DatabaseError,
+        DataError,
+        OperationalError,
+        IntegrityError,
+        InternalError,
+        ProgrammingError,
+        NotSupportedError,
+    )
+
     def __init__(self, host='localhost', port=4001, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
