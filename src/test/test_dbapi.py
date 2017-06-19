@@ -894,6 +894,7 @@ class ClosedConTests(unittest.TestCase):
         except:
             self.fail("Should have raised a ProgrammingError")
 
+@unittest.skip('not implemented')
 class ClosedCurTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
