@@ -778,15 +778,19 @@ class ExtensionTests(unittest.TestCase):
         self.assertEqual(result, 5, "Basic test of Connection.executescript")
 
 class ClosedConTests(unittest.TestCase):
-    def setUp(self):
-        pass
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(":memory:")
+        cls.cur = cls.con.cursor()
+        cls.con.close()
 
-    def tearDown(self):
-        pass
+    @classmethod
+    def tearDownClass(cls):
+        del cls.cur
+        del cls.con
 
     def test_CheckClosedConCursor(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         try:
             cur = con.cursor()
             self.fail("Should have raised a ProgrammingError")
@@ -796,8 +800,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedConCommit(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         try:
             con.commit()
             self.fail("Should have raised a ProgrammingError")
@@ -807,8 +810,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedConRollback(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         try:
             con.rollback()
             self.fail("Should have raised a ProgrammingError")
@@ -818,9 +820,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedCurExecute(self):
-        con = sqlite.connect(":memory:")
-        cur = con.cursor()
-        con.close()
+        cur = self.cur
         try:
             cur.execute("select 4")
             self.fail("Should have raised a ProgrammingError")
@@ -830,8 +830,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedCreateFunction(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         def f(x): return 17
         try:
             con.create_function("foo", 1, f)
@@ -842,8 +841,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedCreateAggregate(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         class Agg:
             def __init__(self):
                 pass
@@ -860,8 +858,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedSetAuthorizer(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         def authorizer(*args):
             return sqlite.DENY
         try:
@@ -873,8 +870,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedSetProgressCallback(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         def progress(): pass
         try:
             con.set_progress_handler(progress, 100)
@@ -885,8 +881,7 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
     def test_CheckClosedCall(self):
-        con = sqlite.connect(":memory:")
-        con.close()
+        con = self.con
         try:
             con()
             self.fail("Should have raised a ProgrammingError")
