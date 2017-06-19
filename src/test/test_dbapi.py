@@ -891,16 +891,20 @@ class ClosedConTests(unittest.TestCase):
             self.fail("Should have raised a ProgrammingError")
 
 class ClosedCurTests(unittest.TestCase):
-    def setUp(self):
-        pass
+    @classmethod
+    def setUpClass(cls):
+        cls.con = sqlite.connect(":memory:")
+        cls.cur = cls.con.cursor()
+        cls.cur.close()
 
-    def tearDown(self):
-        pass
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.close()
+        del cls.cur
+        del cls.con
 
     def test_CheckClosed(self):
-        con = sqlite.connect(":memory:")
-        cur = con.cursor()
-        cur.close()
+        cur = self.cur
 
         for method_name in ("execute", "executemany", "executescript", "fetchall", "fetchmany", "fetchone"):
             if method_name in ("execute", "executescript"):
