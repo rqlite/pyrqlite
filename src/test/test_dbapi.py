@@ -781,6 +781,7 @@ class ExtensionTests(unittest.TestCase):
         result = con.execute("select foo from test").fetchone()[0]
         self.assertEqual(result, 5, "Basic test of Connection.executescript")
 
+@unittest.skip('not implemented')
 class ClosedConTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
