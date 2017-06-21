@@ -56,6 +56,12 @@ class SqliteTypeTests(unittest.TestCase):
         row = self.cur.fetchone()
         self.assertEqual(row[0], u"Österreich")
 
+    def test_CheckStringNull(self):
+        self.cur.execute("insert into test(s) values (?)", (None,))
+        self.cur.execute("select s from test")
+        row = self.cur.fetchone()
+        self.assertEqual(row[0], None)
+
     def test_CheckSmallInt(self):
         self.cur.execute("insert into test(i) values (?)", (42,))
         self.cur.execute("select i from test")
@@ -69,12 +75,25 @@ class SqliteTypeTests(unittest.TestCase):
         row = self.cur.fetchone()
         self.assertEqual(row[0], num)
 
+    @unittest.expectedFailure
+    def test_CheckIntNull(self):
+        self.cur.execute("insert into test(i) values (?)", (None,))
+        self.cur.execute("select i from test")
+        row = self.cur.fetchone()
+        self.assertEqual(row[0], None)
+
     def test_CheckFloat(self):
         val = 3.14
         self.cur.execute("insert into test(f) values (?)", (val,))
         self.cur.execute("select f from test")
         row = self.cur.fetchone()
         self.assertEqual(row[0], val)
+
+    def test_CheckFloatNull(self):
+        self.cur.execute("insert into test(f) values (?)", (None,))
+        self.cur.execute("select f from test")
+        row = self.cur.fetchone()
+        self.assertEqual(row[0], None)
 
     def test_CheckBlob(self):
         sample = b"Guglhupf"
@@ -84,10 +103,21 @@ class SqliteTypeTests(unittest.TestCase):
         row = self.cur.fetchone()
         self.assertEqual(row[0], sample)
 
+    def test_CheckBlobNull(self):
+        self.cur.execute("insert into test(b) values (?)", (None,))
+        self.cur.execute("select b from test")
+        row = self.cur.fetchone()
+        self.assertEqual(row[0], None)
+
     def test_CheckUnicodeExecute(self):
         self.cur.execute(u"select 'Österreich'")
         row = self.cur.fetchone()
         self.assertEqual(row[0], u"Österreich")
+
+    def test_CheckNullExecute(self):
+        self.cur.execute("select null")
+        row = self.cur.fetchone()
+        self.assertEqual(row[0], None)
 
     def test_PragmaTableInfo(self):
         self.cur.execute("pragma table_info('test')")
