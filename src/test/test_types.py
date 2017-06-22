@@ -75,7 +75,6 @@ class SqliteTypeTests(unittest.TestCase):
         row = self.cur.fetchone()
         self.assertEqual(row[0], num)
 
-    @unittest.expectedFailure
     def test_CheckIntNull(self):
         self.cur.execute("insert into test(i) values (?)", (None,))
         self.cur.execute("select i from test")

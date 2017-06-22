@@ -65,6 +65,12 @@ def _convert_timestamp(val):
     return val
 
 
+def _null_wrapper(converter, value):
+    if value is not None:
+        value = converter(value)
+    return value
+
+
 adapters = {
     bytes: lambda x: x.decode('utf-8'),
     float: lambda x: x,
@@ -79,15 +85,15 @@ adapters = {
 adapters = {(type_, sqlite3.PrepareProtocol): val for type_, val in adapters.items()}
 
 converters = {
-    'UNICODE': lambda x: x.decode('utf-8'),
-    'INTEGER': int,
-    'BOOL': bool,
-    'FLOAT': float,
-    'REAL': float,
+    'UNICODE': functools.partial(_null_wrapper, lambda x: x.decode('utf-8')),
+    'INTEGER': functools.partial(_null_wrapper, int),
+    'BOOL': functools.partial(_null_wrapper, bool),
+    'FLOAT': functools.partial(_null_wrapper, float),
+    'REAL': functools.partial(_null_wrapper, float),
     'NULL': lambda x: None,
     'BLOB': lambda x: x,
-    'DATE': _convert_date,
-    'TIMESTAMP': _convert_timestamp,
+    'DATE': functools.partial(_null_wrapper, _convert_date),
+    'TIMESTAMP': functools.partial(_null_wrapper, _convert_timestamp),
 }
 
 # Non-native converters will be decoded from base64 before fed into converter
