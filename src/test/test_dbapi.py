@@ -490,6 +490,7 @@ class CursorTests(unittest.TestCase):
     def test_CheckSetoutputsize(self):
         self.cu.setoutputsize(5, 0)
 
+    @unittest.skip('Cursor.setoutputsize is not implemented')
     def test_CheckSetoutputsizeNoColumn(self):
         self.cu.setoutputsize(42)
 
