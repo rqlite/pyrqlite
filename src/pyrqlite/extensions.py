@@ -83,6 +83,7 @@ adapters = {
 
 }
 adapters = {(type_, sqlite3.PrepareProtocol): val for type_, val in adapters.items()}
+_default_adapters = adapters.copy()
 
 converters = {
     'UNICODE': functools.partial(_null_wrapper, lambda x: x.decode('utf-8')),
@@ -159,8 +160,13 @@ def _convert_to_python(column_name, type_, parse_decltypes=False, parse_colnames
 
 def _adapt_from_python(value):
     if not isinstance(value, basestring):
+        adapter_key = (type(value), sqlite3.PrepareProtocol)
+        adapter = adapters.get(adapter_key)
         try:
-            adapted = adapters[(type(value), sqlite3.PrepareProtocol)](value)
+            if adapter is None:
+                # Fall back to _default_adapters, so that ObjectAdaptationTests
+                # teardown will correctly restore the default state.
+                adapter = _default_adapters[adapter_key]
         except KeyError as e:
             # No adapter registered. Let the object adapt itself via PEP-246.
             # It has been rejected by the BDFL, but is still implemented
@@ -171,6 +177,8 @@ def _adapt_from_python(value):
                 adapted = value.__conform__(sqlite3.PrepareProtocol)
             else:
                 raise InterfaceError(e)
+        else:
+            adapted = adapter(value)
     else:
         adapted = value
 
