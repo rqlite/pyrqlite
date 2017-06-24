@@ -245,4 +245,5 @@ class Cursor(object):
         raise NotImplementedError(self)
 
     def __iter__(self):
-        raise NotImplementedError(self)
+        while self.rownumber < self.rowcount:
+            yield self.fetchone()
