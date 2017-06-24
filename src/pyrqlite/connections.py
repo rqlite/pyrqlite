@@ -109,6 +109,5 @@ class Connection(object):
         return Cursor(self)
 
     def execute(self, *args, **kwargs):
-        with self.cursor() as cursor:
-            return cursor.execute(*args, **kwargs)
+        return self.cursor().execute(*args, **kwargs)
 
