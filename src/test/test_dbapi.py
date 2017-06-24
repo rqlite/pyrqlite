@@ -761,6 +761,7 @@ class ExtensionTests(unittest.TestCase):
             raised = True
         self.assertEqual(raised, True, "should have raised an exception")
 
+    @unittest.skip('Cursor.executescript is not implemented')
     def test_CheckScriptErrorNormal(self):
         cur = self.con.cursor()
         raised = False
