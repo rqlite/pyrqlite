@@ -751,6 +751,7 @@ class ExtensionTests(unittest.TestCase):
         res = cur.fetchone()[0]
         self.assertEqual(res, 6)
 
+    @unittest.skip('Cursor.executescript is not implemented')
     def test_CheckScriptSyntaxError(self):
         cur = self.con.cursor()
         raised = False
