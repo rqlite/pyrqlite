@@ -737,6 +737,7 @@ class ExtensionTests(unittest.TestCase):
         res = cur.fetchone()[0]
         self.assertEqual(res, 5)
 
+    @unittest.skip('Cursor.executescript is not implemented')
     def test_CheckScriptStringUnicode(self):
         cur = self.con.cursor()
         cur.executescript(u"""
