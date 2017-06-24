@@ -188,9 +188,11 @@ def _column_stripper(column_name, parse_colnames=False):
     return column_name.partition(' ')[0] if parse_colnames else column_name
 
 def _decode_base64_converter(converter, value):
-    if not isinstance(value, bytes):
-        value = value.encode('utf-8')
-    return converter(codecs.decode(value, 'base64'))
+    if value is not None:
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
+        value = converter(codecs.decode(value, 'base64'))
+    return value
 
 def _conditional_string_decode_base64(value):
     if isinstance(value, basestring):

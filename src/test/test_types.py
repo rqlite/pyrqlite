@@ -265,6 +265,12 @@ class DeclTypesTests(unittest.TestCase):
         row = self.cur.fetchone()
         self.assertEqual(row[0], sample)
 
+    def test_CheckBlobNull(self):
+        self.cur.execute("insert into test(bin) values (?)", (None,))
+        self.cur.execute("select bin from test")
+        row = self.cur.fetchone()
+        self.assertEqual(row[0], None)
+
     def test_CheckNumber1(self):
         self.cur.execute("insert into test(n1) values (5)")
         value = self.cur.execute("select n1 from test").fetchone()[0]
