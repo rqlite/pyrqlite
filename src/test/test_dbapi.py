@@ -351,6 +351,7 @@ class CursorTests(unittest.TestCase):
         self.cu.executemany("insert into test(name) values (?)", [(1,), (2,), (3,)])
         self.assertEqual(self.cu.rowcount, 3)
 
+    @unittest.skip('Cursor.total_changes is not implemented')
     def test_CheckTotalChanges(self):
         self.cu.execute("insert into test(name) values ('foo')")
         self.cu.execute("insert into test(name) values ('foo')")
