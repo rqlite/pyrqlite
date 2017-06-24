@@ -482,6 +482,7 @@ class CursorTests(unittest.TestCase):
         res = self.cu.fetchall()
         self.assertEqual(res, [])
 
+    @unittest.skip('Cursor.setinputsizes is not implemented')
     def test_CheckSetinputsizes(self):
         self.cu.setinputsizes([3, 4, 5])
 
