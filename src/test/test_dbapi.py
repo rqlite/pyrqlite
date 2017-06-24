@@ -775,6 +775,7 @@ class ExtensionTests(unittest.TestCase):
         result = self.con.execute("select 5").fetchone()[0]
         self.assertEqual(result, 5, "Basic test of Connection.execute")
 
+    @unittest.skip('Connection.executemany is not implemented')
     def test_CheckConnectionExecutemany(self):
         con = self.con
         con.execute("create table test(foo)")
