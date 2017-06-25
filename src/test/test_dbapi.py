@@ -314,6 +314,7 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
+    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMappingNoArgs(self):
         self.cu.execute("insert into test(name) values ('foo')")
         try:
