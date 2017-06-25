@@ -29,10 +29,7 @@ try:
 except ImportError:
     from test import test_support
 import unittest
-try:
-    import threading
-except ImportError:
-    threading = None
+
 import pyrqlite.dbapi2 as sqlite
 
 if sys.version_info[0] >= 3:
@@ -526,171 +523,6 @@ class CursorTests(unittest.TestCase):
         except TypeError:
             pass
 
-@unittest.skipUnless(threading, 'This test requires threading.')
-class ThreadTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.con = sqlite.connect(":memory:")
-
-    def setUp(self):
-        self.cur = self.con.cursor()
-        self.cur.execute("create table test(id integer primary key, name text, bin binary, ratio number, ts timestamp)")
-
-    def tearDown(self):
-        self.cur.execute("drop table test")
-        self.cur.close()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.con.close()
-        del cls.con
-
-    def test_CheckConCursor(self):
-        def run(con, errors):
-            try:
-                cur = con.cursor()
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        t = threading.Thread(target=run, kwargs={"con": self.con, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckConCommit(self):
-        def run(con, errors):
-            try:
-                con.commit()
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        t = threading.Thread(target=run, kwargs={"con": self.con, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckConRollback(self):
-        def run(con, errors):
-            try:
-                con.rollback()
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        t = threading.Thread(target=run, kwargs={"con": self.con, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckConClose(self):
-        def run(con, errors):
-            try:
-                con.close()
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        t = threading.Thread(target=run, kwargs={"con": self.con, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckCurImplicitBegin(self):
-        def run(cur, errors):
-            try:
-                cur.execute("insert into test(name) values ('a')")
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        t = threading.Thread(target=run, kwargs={"cur": self.cur, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckCurClose(self):
-        def run(cur, errors):
-            try:
-                cur.close()
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        t = threading.Thread(target=run, kwargs={"cur": self.cur, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckCurExecute(self):
-        def run(cur, errors):
-            try:
-                cur.execute("select name from test")
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        self.cur.execute("insert into test(name) values ('a')")
-        t = threading.Thread(target=run, kwargs={"cur": self.cur, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
-
-    def test_CheckCurIterNext(self):
-        def run(cur, errors):
-            try:
-                row = cur.fetchone()
-                errors.append("did not raise ProgrammingError")
-                return
-            except sqlite.ProgrammingError:
-                return
-            except:
-                errors.append("raised wrong exception")
-
-        errors = []
-        self.cur.execute("insert into test(name) values ('a')")
-        self.cur.execute("select name from test")
-        t = threading.Thread(target=run, kwargs={"cur": self.cur, "errors": errors})
-        t.start()
-        t.join()
-        if len(errors) > 0:
-            self.fail("\n".join(errors))
 
 class ConstructorTests(unittest.TestCase):
     def test_CheckDate(self):
@@ -953,12 +785,11 @@ def suite():
     module_suite = loader.loadTestsFromTestCase(ModuleTests)
     connection_suite = loader.loadTestsFromTestCase(ConnectionTests)
     cursor_suite = loader.loadTestsFromTestCase(CursorTests)
-    thread_suite = loader.loadTestsFromTestCase(ThreadTests)
     constructor_suite = loader.loadTestsFromTestCase(ConstructorTests)
     ext_suite = loader.loadTestsFromTestCase(ExtensionTests)
     closed_con_suite = loader.loadTestsFromTestCase(ClosedConTests)
     closed_cur_suite = loader.loadTestsFromTestCase(ClosedCurTests)
-    return unittest.TestSuite((module_suite, connection_suite, cursor_suite, thread_suite, constructor_suite, ext_suite, closed_con_suite, closed_cur_suite))
+    return unittest.TestSuite((module_suite, connection_suite, cursor_suite, constructor_suite, ext_suite, closed_con_suite, closed_cur_suite))
 
 def test():
     runner = unittest.TextTestRunner(verbosity=2)
