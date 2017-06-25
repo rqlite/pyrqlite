@@ -132,6 +132,7 @@ class ConnectionTests(unittest.TestCase):
     def test_CheckCursor(self):
         cu = self.cx.cursor()
 
+    @unittest.skip('not implemented')
     def test_CheckFailedOpen(self):
         YOU_CANNOT_OPEN_THIS = "/foo/bar/bla/23534/mydb.db"
         try:
