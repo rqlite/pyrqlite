@@ -18,6 +18,7 @@ from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
 
 
 if sys.version_info[0] >= 3:
+    basestring = str
     _urlencode = urlencode
 else:
     # avoid UnicodeEncodeError from urlencode
@@ -101,6 +102,10 @@ class Cursor(object):
         return sql_str.split(None, 1)[0].upper()
 
     def execute(self, operation, parameters=None):
+        if not isinstance(operation, basestring):
+            raise ValueError(
+                "argument must be a string, not '{}'".format(
+                type(operation).__name__))
 
         if parameters:
             operation = self._substitute_params(operation, parameters)
@@ -189,6 +194,11 @@ class Cursor(object):
         return self
 
     def executemany(self, operation, seq_of_parameters=None):
+        if not isinstance(operation, basestring):
+            raise ValueError(
+                "argument must be a string, not '{}'".format(
+                type(operation).__name__))
+
         statements = []
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
