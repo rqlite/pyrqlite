@@ -798,9 +798,9 @@ def suite():
     closed_cur_suite = loader.loadTestsFromTestCase(ClosedCurTests)
     return unittest.TestSuite((module_suite, connection_suite, cursor_suite, constructor_suite, ext_suite, closed_con_suite, closed_cur_suite))
 
-def test():
+def main():
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
 
 if __name__ == "__main__":
-    test()
+    main()
