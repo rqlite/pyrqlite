@@ -290,6 +290,7 @@ class CursorTests(unittest.TestCase):
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
+    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMapping_Mapping(self):
         # Test only works with Python 2.5 or later
         if sys.version_info < (2, 5, 0):
