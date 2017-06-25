@@ -192,6 +192,7 @@ class CursorTests(unittest.TestCase):
         except:
             self.fail("raised wrong exception")
 
+    @unittest.skip('not implemented')
     def test_CheckExecuteTooMuchSql(self):
         try:
             self.cu.execute("select 5+4; select 4+5")
@@ -201,9 +202,11 @@ class CursorTests(unittest.TestCase):
         except:
             self.fail("raised wrong exception")
 
+    @unittest.skip('not implemented')
     def test_CheckExecuteTooMuchSql2(self):
         self.cu.execute("select 5+4; -- foo bar")
 
+    @unittest.skip('not implemented')
     def test_CheckExecuteTooMuchSql3(self):
         self.cu.execute("""
             select 5+4;
