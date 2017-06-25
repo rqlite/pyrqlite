@@ -522,9 +522,9 @@ def suite():
     cte_suite = loader.loadTestsFromTestCase(CommonTableExpressionTests)
     return unittest.TestSuite((sqlite_type_suite, decltypes_type_suite, colnames_type_suite, adaptation_suite, bin_suite, date_suite, cte_suite))
 
-def test():
+def main():
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite())
 
 if __name__ == "__main__":
-    test()
+    main()
