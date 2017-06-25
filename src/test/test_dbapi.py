@@ -407,6 +407,7 @@ class CursorTests(unittest.TestCase):
         except:
             self.fail("raised wrong exception.")
 
+    @unittest.skip('not implemented')
     def test_CheckExecuteManySelect(self):
         try:
             self.cu.executemany("select ?", [(3,)])
