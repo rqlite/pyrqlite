@@ -305,6 +305,7 @@ class CursorTests(unittest.TestCase):
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
+    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMappingTooLittleArgs(self):
         self.cu.execute("insert into test(name) values ('foo')")
         try:
