@@ -232,6 +232,7 @@ class CursorTests(unittest.TestCase):
     def test_CheckExecuteArgString(self):
         self.cu.execute("insert into test(name) values (?)", ("Hugo",))
 
+    @unittest.expectedFailure
     def test_CheckExecuteArgStringWithZeroByte(self):
         self.cu.execute("insert into test(name) values (?)", ("Hu\x00go",))
 
