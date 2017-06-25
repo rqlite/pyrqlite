@@ -250,6 +250,7 @@ class DeclTypesTests(unittest.TestCase):
         with self.assertRaises(sqlite.InterfaceError):
             self.cur.execute("insert into test(f) values (?)", (val,))
 
+    @unittest.skip('named paramstyle is not implemented')
     def test_CheckUnsupportedDict(self):
         class Bar: pass
         val = Bar()
