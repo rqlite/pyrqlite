@@ -344,6 +344,7 @@ class CursorTests(unittest.TestCase):
         self.cu.execute("update test set name='bar'")
         self.assertEqual(self.cu.rowcount, 2)
 
+    @unittest.skip('not implemented')
     def test_CheckRowcountSelect(self):
         """
         pysqlite does not know the rowcount of SELECT statements, because we
