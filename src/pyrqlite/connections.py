@@ -68,8 +68,8 @@ class Connection(object):
             uri = response.getheader('Location')
             location = urlparse(uri)
 
-            logging.debug("status: %s reason: '%s' location: '%s'",
-                          response.status, response.reason, uri)
+            logging.getLogger(__name__).debug("status: %s reason: '%s' location: '%s'",
+                                              response.status, response.reason, uri)
 
             if self.host != location.hostname or self.port != location.port:
                 self._connection.close()

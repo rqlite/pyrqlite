@@ -58,8 +58,9 @@ class Cursor(object):
 
 
     def _request(self, method, uri, body=None, headers={}):
-        debug = logging.getLogger().getEffectiveLevel() < logging.DEBUG
-        logging.debug(
+        logger = logging.getLogger(__name__)
+        debug = logger.getEffectiveLevel() < logging.DEBUG
+        logger.debug(
             'request method: %s uri: %s headers: %s body: %s',
             method,
             uri,
@@ -67,16 +68,16 @@ class Cursor(object):
             body)
         response = self.connection._fetch_response(
             method, uri, body=body, headers=headers)
-        logging.debug(
+        logger.debug(
             "status: %s reason: %s",
             response.status,
             response.reason)
         response_text = response.read().decode('utf-8')
-        logging.debug("raw response: %s", response_text)
+        logger.debug("raw response: %s", response_text)
         response_json = json.loads(
             response_text, object_pairs_hook=OrderedDict)
         if debug:
-            logging.debug(
+            logger.debug(
                 "formatted response: %s",
                 json.dumps(
                     response_json,
@@ -129,7 +130,7 @@ class Cursor(object):
             rows_affected = 0
             for item in results:
                 if 'error' in item:
-                    logging.error(json.dumps(item))
+                    logging.getLogger(__name__).error(json.dumps(item))
                     raise Error(json.dumps(item))
                 try:
                     rows_affected += item['rows_affected']
@@ -214,7 +215,7 @@ class Cursor(object):
             rows_affected = 0
             for item in results:
                 if 'error' in item:
-                    logging.error(json.dumps(item))
+                    logging.getLogger(__name__).error(json.dumps(item))
                 try:
                     rows_affected += item['rows_affected']
                 except KeyError:
