@@ -100,11 +100,14 @@ class Connection(object):
                 response.getheader('Location') is not None and \
                 (self.max_redirects == UNLIMITED_REDIRECTS or redirects < self.max_redirects):
             redirects += 1
-            uri = response.getheader('Location')
-            location = urlparse(uri)
+            # NOTE: Only use the host and port from the Location header,
+            # since it does not contain any query parameters that the uri
+            # variable may contain.
+            new_uri = response.getheader('Location')
+            location = urlparse(new_uri)
 
             logging.getLogger(__name__).debug("status: %s reason: '%s' location: '%s'",
-                                              response.status, response.reason, uri)
+                                              response.status, response.reason, new_uri)
 
             if self.host != location.hostname or self.port != location.port:
                 self._connection.close()
