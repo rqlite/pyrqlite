@@ -32,21 +32,30 @@ def _decoder(conv_func):
     """
     return lambda s: conv_func(s.decode('utf-8'))
 
-def _escape_string(value):
-    if isinstance(value, bytes):
-        try:
-            value = value.decode('utf-8')
-        except UnicodeDecodeError:
-            # Encode as a BLOB literal containing hexadecimal data
+if sys.version_info[0] >= 3:
+
+    def _escape_string(value):
+        if isinstance(value, bytes):
             return "X'{}'".format(
                 codecs.encode(value, 'hex').decode('utf-8'))
 
-    return "'{}'".format(value.replace("'", "''"))
+        return "'{}'".format(value.replace("'", "''"))
 
-if sys.version_info[0] >= 3:
     def _adapt_datetime(val):
         return val.isoformat(" ")
 else:
+
+    def _escape_string(value):
+        if isinstance(value, bytes):
+            try:
+                value = value.decode('utf-8')
+            except UnicodeDecodeError:
+                # Encode as a BLOB literal containing hexadecimal data
+                return "X'{}'".format(
+                    codecs.encode(value, 'hex').decode('utf-8'))
+
+        return "'{}'".format(value.replace("'", "''"))
+
     def _adapt_datetime(val):
         return val.isoformat(b" ")
 
