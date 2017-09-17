@@ -516,7 +516,7 @@ class DateTimeTests(unittest.TestCase):
         self.cur.execute("insert into test(dt) values (?)", (now,))
         self.cur.execute("select dt from test")
         dt = self.cur.fetchone()[0]
-        self.assertEqual(dt, now.isoformat(' '))
+        self.assertEqual(dt, now.isoformat(' ').rstrip('0').rstrip('.'))
 
 def suite():
     loader = unittest.TestLoader()
