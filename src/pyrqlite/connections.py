@@ -39,7 +39,7 @@ class Connection(object):
         NotSupportedError,
     )
 
-    def __init__(self, host=':memory:', port=4001, connect_timeout=None,
+    def __init__(self, host='localhost', port=4001, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
