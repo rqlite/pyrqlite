@@ -1,6 +1,7 @@
 
 from __future__ import unicode_literals
 
+import codecs
 import logging
 
 try:
@@ -39,12 +40,19 @@ class Connection(object):
         NotSupportedError,
     )
 
-    def __init__(self, host='localhost', port=4001, connect_timeout=None,
+    def __init__(self, host='localhost', port=4001,
+                 user=None, password=None, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
         self.host = host
         self.port = port
+        self._headers = {}
+        if not (user is None or password is None):
+            self._headers['Authorization'] = 'Basic ' + \
+                codecs.encode('{}:{}'.format(user, password).encode('utf-8'),
+                              'base64').decode('utf-8').rstrip('\n')
+
         self.connect_timeout = connect_timeout
         self.max_redirects = max_redirects
         self.detect_types = detect_types
@@ -65,7 +73,8 @@ class Connection(object):
         while tries:
             tries -= 1
             try:
-                self._connection.request(method, uri, body=body, headers=headers)
+                self._connection.request(method, uri, body=body,
+                                         headers=dict(self._headers, **headers))
                 return self._connection.getresponse()
             except Exception:
                 if not tries:
