@@ -95,7 +95,7 @@ class SqliteTypeTests(unittest.TestCase):
         self.assertEqual(row[0], None)
 
     def test_CheckBlob(self):
-        sample = b"Guglhupf"
+        sample = b"\x99Guglhupf"
         val = sample
         self.cur.execute("insert into test(b) values (?)", (val,))
         self.cur.execute("select b from test")

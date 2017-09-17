@@ -32,16 +32,21 @@ def _decoder(conv_func):
     """
     return lambda s: conv_func(s.decode('utf-8'))
 
-if sys.version_info[0] >= 3:
-    def _escape_string(value):
-        return (type(value)("'%s'")) % (value.replace("'", "''"))
+def _escape_string(value):
+    if isinstance(value, bytes):
+        try:
+            value = value.decode('utf-8')
+        except UnicodeDecodeError:
+            # Encode as a BLOB literal containing hexadecimal data
+            return "X'{}'".format(
+                codecs.encode(value, 'hex').decode('utf-8'))
 
+    return "'{}'".format(value.replace("'", "''"))
+
+if sys.version_info[0] >= 3:
     def _adapt_datetime(val):
         return val.isoformat(" ")
 else:
-    def _escape_string(value):
-        return (type(value)(b"'%s'")) % (value.replace(b"'", b"''"))
-
     def _adapt_datetime(val):
         return val.isoformat(b" ")
 
@@ -72,7 +77,7 @@ def _null_wrapper(converter, value):
 
 
 adapters = {
-    bytes: lambda x: x.decode('utf-8'),
+    bytes: lambda x: x,
     float: lambda x: x,
     int: lambda x: x,
     bool: int,
@@ -184,7 +189,7 @@ def _adapt_from_python(value):
         adapted = value
 
     # The adapter could had returned a string
-    if isinstance(adapted, basestring):
+    if isinstance(adapted, (bytes, unicode)):
         adapted = _escape_string(adapted)
     elif adapted is None:
         adapted = 'NULL'
