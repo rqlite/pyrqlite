@@ -60,12 +60,24 @@ class Connection(object):
         return HTTPConnection(self.host, port=self.port,
                               timeout=None if self.connect_timeout is None else float(self.connect_timeout))
 
+    def _retry_request(self, method, uri, body=None, headers={}):
+        tries = 10
+        while tries:
+            tries -= 1
+            try:
+                self._connection.request(method, uri, body=body, headers=headers)
+                return self._connection.getresponse()
+            except Exception:
+                if not tries:
+                    raise
+                self._connection.close()
+                self._connection = self._init_connection()
+
     def _fetch_response(self, method, uri, body=None, headers={}):
         """
         Fetch a response, handling redirection.
         """
-        self._connection.request(method, uri, body=body, headers=headers)
-        response = self._connection.getresponse()
+        response = self._retry_request(method, uri, body=body, headers=headers)
         redirects = 0
 
         while response.status == 301 and \
@@ -84,8 +96,7 @@ class Connection(object):
                 self.port = location.port
                 self._connection = self._init_connection()
 
-            self._connection.request(method, uri, body=body, headers=headers)
-            response = self._connection.getresponse()
+            response = self._retry_request(method, uri, body=body, headers=headers)
 
         return response
 
