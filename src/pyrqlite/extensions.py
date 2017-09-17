@@ -94,11 +94,12 @@ converters = {
     'NULL': lambda x: None,
     'BLOB': lambda x: x,
     'DATE': functools.partial(_null_wrapper, _convert_date),
+    'DATETIME': lambda x: x.replace('T', ' ').rstrip('Z'),
     'TIMESTAMP': functools.partial(_null_wrapper, _convert_timestamp),
 }
 
 # Non-native converters will be decoded from base64 before fed into converter
-_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'NULL', 'DATE', 'TIMESTAMP')
+_native_converters = ('BOOL', 'FLOAT', 'INTEGER', 'REAL', 'NUMBER', 'NULL', 'DATE', 'DATETIME', 'TIMESTAMP')
 
 # SQLite TEXT affinity: https://www.sqlite.org/datatype3.html
 _text_affinity_re = re.compile(r'CHAR|CLOB|TEXT')

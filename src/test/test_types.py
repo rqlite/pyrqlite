@@ -463,7 +463,7 @@ class DateTimeTests(unittest.TestCase):
             cls.cur.execute("drop table test")
 
     def setUp(self):
-        self.cur.execute("create table test(d date, ts timestamp)")
+        self.cur.execute("create table test(d date, ts timestamp, dt datetime)")
 
     def tearDown(self):
         self.cur.execute("drop table test")
@@ -510,6 +510,13 @@ class DateTimeTests(unittest.TestCase):
         self.cur.execute("select ts from test")
         ts2 = self.cur.fetchone()[0]
         self.assertEqual(ts, ts2)
+
+    def test_CheckSqlDatetime(self):
+        now = datetime.datetime.utcnow()
+        self.cur.execute("insert into test(dt) values (?)", (now,))
+        self.cur.execute("select dt from test")
+        dt = self.cur.fetchone()[0]
+        self.assertEqual(dt, now.isoformat(' '))
 
 def suite():
     loader = unittest.TestLoader()
