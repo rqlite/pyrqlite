@@ -74,7 +74,10 @@ This example will print:
 .. code:: python
 
     OrderedDict([('id', 1), ('name', 'a')])
-
+    
+Limitations
+---------
+Transactions are not supported.
 
 Resources
 ---------
