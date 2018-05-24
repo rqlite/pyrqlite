@@ -5,6 +5,7 @@ from collections import OrderedDict
 import json
 import logging
 import sys
+import re
 
 try:
     # pylint: disable=no-name-in-module
@@ -90,16 +91,53 @@ class Cursor(object):
         '''
         SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and NULL
         '''
+
+        param_matches = 0
         subst = []
-        parts = operation.split('?')
-        if len(parts) - 1 != len(parameters):
-            raise ProgrammingError('incorrect number of parameters (%s != %s): %s %s' %
-                                   (len(parts) - 1, len(parameters), operation, parameters))
-        for i, part in enumerate(parts):
-            subst.append(part)
-            if i < len(parameters):
-                subst.append(_adapt_from_python(parameters[i]))
-        return ''.join(subst)
+
+        qmark_re = re.compile(r"(\?)")
+        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
+
+        qmark_matches = qmark_re.findall(operation)
+        named_matches = named_re.findall(operation)
+
+        if len(qmark_matches) > 0 and len(named_matches) > 0:
+            raise ProgrammingError('different paramater types in operation not permitted: %s %s' %
+                                   (operation, parameters))
+
+        param_matches = len(qmark_matches) + len(named_matches)
+
+        # Matches but no parameters
+        if param_matches > 0 and parameters == None:
+            raise ProgrammingError('paramater required but not given: %s' % operation)
+
+        # No regex matches and no parameters.
+        if parameters == None:
+            return operation
+
+        if isinstance(parameters,dict):
+            # parameters is a dict or a dict subclass
+            if len(qmark_matches) > 0:
+                raise ProgrammingError('Unamed binding used, but you supplied a dictionary (which has only names): %s %s' %
+                                       (operation, parameters))
+            for op_key in named_matches:
+                try:
+                    operation = operation.replace(op_key, _adapt_from_python(parameters[op_key[1:]]))
+                except KeyError:
+                    raise ProgrammingError('the named parameters given do not match operation: %s %s' %
+                                           (operation, parameters)) 
+        else:
+            # parameters is a sequence
+            if param_matches != len(parameters):
+                raise ProgrammingError('incorrect number of parameters (%s != %s): %s %s' %
+                                   (param_matches, len(parameters), operation, parameters))
+            if len(named_matches) > 0:
+                raise ProgrammingError('Named binding used, but you supplied a sequence (which has no names): %s %s' %
+                                       (operation, parameters))
+            for i in range(len(parameters)):
+                operation = operation.replace('?', _adapt_from_python(parameters[i]),1)
+ 
+        return operation
 
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
@@ -110,8 +148,7 @@ class Cursor(object):
                 "argument must be a string, not '{}'".format(
                 type(operation).__name__))
 
-        if parameters:
-            operation = self._substitute_params(operation, parameters)
+        operation = self._substitute_params(operation, parameters)
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):

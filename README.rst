@@ -40,6 +40,9 @@ To run all the tests, execute the script ``setup.py``::
 
     $ python setup.py test
 
+[pytest](https://pytest.org/) is required to run the test suite. pytest can be
+installed with ``pip``
+
 Example
 -------
 
@@ -61,20 +64,32 @@ The following code creates a connection and executes some statements:
             cursor.executemany('INSERT INTO foo(name) VALUES(?)', seq_of_parameters=(('a',), ('b',)))
 
         with connection.cursor() as cursor:
-            # Read a single record
+            # Read a single record with qmark parameter style
             sql = "SELECT `id`, `name` FROM `foo` WHERE `name`=?"
             cursor.execute(sql, ('a',))
+            result = cursor.fetchone()
+            print(result)
+            # Read a single record with named parameter style
+            sql = "SELECT `id`, `name` FROM `foo` WHERE `name`=:name"
+            cursor.execute(sql, {'name': 'b'})
             result = cursor.fetchone()
             print(result)
     finally:
         connection.close()
 
-This example will print:
-
 .. code:: python
 
+This example will print:
+
+
     OrderedDict([('id', 1), ('name', 'a')])
+    OrderedDict([('id', 2), ('name', 'b')])
     
+Paramstyle
+---------
+
+Only qmark and named paramstyles (as defined in PEP 249) are supported. 
+
 Limitations
 ---------
 Transactions are not supported.
