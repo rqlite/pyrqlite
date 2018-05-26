@@ -256,7 +256,6 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
-    @unittest.expectedFailure
     def test_CheckExecuteWrongNoOfArgs2(self):
         # too little parameters
         try:
@@ -265,7 +264,6 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
-    @unittest.expectedFailure
     def test_CheckExecuteWrongNoOfArgs3(self):
         # no parameters, parameters are needed
         try:
