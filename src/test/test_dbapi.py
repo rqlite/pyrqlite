@@ -163,7 +163,10 @@ class ConnectionTests(unittest.TestCase):
 class CursorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cx = sqlite.connect(":memory:")
+        cls.cx = sqlite.connect(
+            host='localhost',
+            port=4001,
+        )
 
     def setUp(self):
         self.cu = self.cx.cursor()
@@ -250,7 +253,6 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
-    @unittest.expectedFailure
     def test_CheckExecuteWrongNoOfArgs2(self):
         # too little parameters
         try:
@@ -259,7 +261,6 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
-    @unittest.expectedFailure
     def test_CheckExecuteWrongNoOfArgs3(self):
         # no parameters, parameters are needed
         try:
@@ -287,14 +288,12 @@ class CursorTests(unittest.TestCase):
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
-    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMapping(self):
         self.cu.execute("insert into test(name) values ('foo')")
         self.cu.execute("select name from test where name=:name", {"name": "foo"})
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
-    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMapping_Mapping(self):
         # Test only works with Python 2.5 or later
         if sys.version_info < (2, 5, 0):
@@ -309,7 +308,6 @@ class CursorTests(unittest.TestCase):
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
-    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMappingTooLittleArgs(self):
         self.cu.execute("insert into test(name) values ('foo')")
         try:
@@ -318,7 +316,6 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
-    @unittest.skip('named paramstyle is not implemented')
     def test_CheckExecuteDictMappingNoArgs(self):
         self.cu.execute("insert into test(name) values ('foo')")
         try:
@@ -327,7 +324,14 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
-    @unittest.skip('named paramstyle is not implemented')
+    def test_CheckExecuteNamedWithoutDict(self):
+        self.cu.execute("insert into test(name) values ('foo')")
+        try:
+            self.cu.execute("select name from test where name=:name", ("name",))
+            self.fail("should have raised ProgrammingError")
+        except sqlite.ProgrammingError:
+            pass
+
     def test_CheckExecuteDictMappingUnnamed(self):
         self.cu.execute("insert into test(name) values ('foo')")
         try:

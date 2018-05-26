@@ -5,6 +5,7 @@ from collections import OrderedDict
 import json
 import logging
 import sys
+import re
 
 try:
     # pylint: disable=no-name-in-module
@@ -27,7 +28,7 @@ else:
     def _urlencode(query, doseq=0):
         return urlencode(dict(
             (k if isinstance(k, bytes) else k.encode('utf-8'),
-            v if isinstance(v, bytes) else v.encode('utf-8'))
+             v if isinstance(v, bytes) else v.encode('utf-8'))
             for k, v in query.items()), doseq=doseq)
 
 
@@ -58,7 +59,6 @@ class Cursor(object):
     def close(self):
         self._rows = None
 
-
     def _request(self, method, uri, body=None, headers={}):
         logger = logging.getLogger(__name__)
         debug = logger.getEffectiveLevel() < logging.DEBUG
@@ -88,18 +88,62 @@ class Cursor(object):
 
     def _substitute_params(self, operation, parameters):
         '''
-        SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and NULL
+        SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and
+        NULL
         '''
-        subst = []
-        parts = operation.split('?')
-        if len(parts) - 1 != len(parameters):
-            raise ProgrammingError('incorrect number of parameters (%s != %s): %s %s' %
-                                   (len(parts) - 1, len(parameters), operation, parameters))
-        for i, part in enumerate(parts):
-            subst.append(part)
-            if i < len(parameters):
-                subst.append(_adapt_from_python(parameters[i]))
-        return ''.join(subst)
+
+        param_matches = 0
+
+        qmark_re = re.compile(r"(\?)")
+        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
+
+        qmark_matches = qmark_re.findall(operation)
+        named_matches = named_re.findall(operation)
+        param_matches = len(qmark_matches) + len(named_matches)
+
+        # Matches but no parameters
+        if param_matches > 0 and parameters is None:
+            raise ProgrammingError('paramater required but not given: %s' %
+                                   operation)
+
+        # No regex matches and no parameters.
+        if parameters is None:
+            return operation
+
+        if len(qmark_matches) > 0 and len(named_matches) > 0:
+            raise ProgrammingError('different paramater types in operation not'
+                                   'permitted: %s %s' % 
+                                   (operation, parameters))
+
+        if isinstance(parameters, dict):
+            # parameters is a dict or a dict subclass
+            if len(qmark_matches) > 0:
+                raise ProgrammingError('Unamed binding used, but you supplied '
+                                       'a dictionary (which has only names): '
+                                       '%s %s' % (operation, parameters))
+            for op_key in named_matches:
+                try:
+                    operation = operation.replace(op_key, 
+                                                 _adapt_from_python(parameters[op_key[1:]]))
+                except KeyError:
+                    raise ProgrammingError('the named parameters given do not '
+                                           'match operation: %s %s' %
+                                           (operation, parameters))
+        else:
+            # parameters is a sequence
+            if param_matches != len(parameters):
+                raise ProgrammingError('incorrect number of parameters '
+                                       '(%s != %s): %s %s' % (param_matches, 
+                                       len(parameters), operation, parameters))
+            if len(named_matches) > 0:
+                raise ProgrammingError('Named binding used, but you supplied a'
+                                       ' sequence (which has no names): %s %s' %
+                                       (operation, parameters))
+            for i in range(len(parameters)):
+                operation = operation.replace('?', 
+                                              _adapt_from_python(parameters[i]), 1)
+
+        return operation
 
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
@@ -107,11 +151,9 @@ class Cursor(object):
     def execute(self, operation, parameters=None):
         if not isinstance(operation, basestring):
             raise ValueError(
-                "argument must be a string, not '{}'".format(
-                type(operation).__name__))
+                             "argument must be a string, not '{}'".format(type(operation).__name__))
 
-        if parameters:
-            operation = self._substitute_params(operation, parameters)
+        operation = self._substitute_params(operation, parameters)
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
@@ -174,15 +216,14 @@ class Cursor(object):
             else:
                 if values:
                     converters = [_convert_to_python(field, type_,
-                        parse_decltypes=self.connection.parse_decltypes,
-                        parse_colnames=self.connection.parse_colnames)
-                        for field, type_ in zip(fields, types)]
+                                  parse_decltypes=self.connection.parse_decltypes,
+                                  parse_colnames=self.connection.parse_colnames)
+                                  for field, type_ in zip(fields, types)]
                     for payload_row in values:
                         row = []
-                        for field, converter, value in zip(
-                            fields, converters, payload_row):
+                        for field, converter, value in zip(fields, converters, payload_row):
                             row.append((field, (value if converter is None
-                                else converter(value))))
+                                                else converter(value))))
                         rows.append(Row(row))
             self._rows = rows
             self.description = tuple(description)
@@ -199,8 +240,7 @@ class Cursor(object):
     def executemany(self, operation, seq_of_parameters=None):
         if not isinstance(operation, basestring):
             raise ValueError(
-                "argument must be a string, not '{}'".format(
-                type(operation).__name__))
+                "argument must be a string, not '{}'".format(type(operation).__name__))
 
         statements = []
         for parameters in seq_of_parameters:
