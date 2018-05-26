@@ -40,8 +40,8 @@ To run all the tests, execute the script ``setup.py``::
 
     $ python setup.py test
 
-[pytest](https://pytest.org/) is required to run the test suite. pytest can be
-installed with ``pip``
+[pytest](https://pytest.org/) and pytest-cov are required to run the test
+suite. They can both be installed with ``pip``
 
 Example
 -------
