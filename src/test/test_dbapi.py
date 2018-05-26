@@ -94,10 +94,7 @@ class ModuleTests(unittest.TestCase):
 class ConnectionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cx = sqlite.connect(
-            host='host1',
-            port=4001,
-        )
+        cls.cx = sqlite.connect(":memory:")
 
     def setUp(self):
         cu = self.cx.cursor()
@@ -167,7 +164,7 @@ class CursorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cx = sqlite.connect(
-            host='host1',
+            host='localhost',
             port=4001,
         )
 
@@ -566,10 +563,7 @@ class ConstructorTests(unittest.TestCase):
 class ExtensionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.con = sqlite.connect(
-            host='host1',
-            port=4001,
-        )
+        cls.con = sqlite.connect(":memory:")
 
     def tearDown(self):
         for row in self.con.execute(
@@ -652,7 +646,7 @@ class ExtensionTests(unittest.TestCase):
 class ClosedConTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.con = sxxxqlite.connect(":memory:")
+        cls.con = sqlite.connect(":memory:")
         cls.cur = cls.con.cursor()
         cls.con.close()
 
@@ -766,10 +760,7 @@ class ClosedConTests(unittest.TestCase):
 class ClosedCurTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.con = sqlite.connect(
-            host='host1',
-            port=4001,
-        )
+        cls.con = sqlite.connect(":memory:")
         cls.cur = cls.con.cursor()
         cls.cur.close()
 
