@@ -163,10 +163,7 @@ class ConnectionTests(unittest.TestCase):
 class CursorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.cx = sqlite.connect(
-            host='localhost',
-            port=4001,
-        )
+        cls.cx = sqlite.connect(":memory:")
 
     def setUp(self):
         self.cu = self.cx.cursor()
