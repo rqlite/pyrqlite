@@ -1,9 +1,11 @@
 
 import contextlib
+import errno
 import os
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -53,10 +55,17 @@ class EphemeralRqlited(object):
             self.http = (self.host, http_port)
             self.raft = (self.host, raft_port)
             with open(os.devnull, mode='wb', buffering=0) as devnull:
-                self._proc = subprocess.Popen(['rqlited',
-                    '-http-addr', '{}:{}'.format(*self.http),
-                    '-raft-addr', '{}:{}'.format(*self.raft), self._tempdir],
-                    stdout=devnull, stderr=devnull)
+                filename = 'rqlited'
+                try:
+                    self._proc = subprocess.Popen([filename,
+                        '-http-addr', '{}:{}'.format(*self.http),
+                        '-raft-addr', '{}:{}'.format(*self.raft), self._tempdir],
+                        stdout=devnull, stderr=devnull)
+                except EnvironmentError as e:
+                    if e.errno == errno.ENOENT and sys.version_info.major < 3:
+                        # Add filename to clarify exception message.
+                        e.filename = filename
+                    raise
 
             while not self._test_port(*self.http) and self._proc.poll() is None:
                 time.sleep(0.5)
