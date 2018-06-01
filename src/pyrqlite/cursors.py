@@ -229,9 +229,10 @@ class Cursor(object):
             self.description = tuple(description)
 
         self.rownumber = 0
-        if command == 'UPDATE':
+        if command in ('UPDATE', 'DELETE'):
             # sqalchemy's _emit_update_statements function asserts
-            # rowcount for each update
+            # rowcount for each update, and _emit_delete_statements
+            # warns unless rowcount matches
             self.rowcount = rows_affected
         else:
             self.rowcount = len(self._rows)
