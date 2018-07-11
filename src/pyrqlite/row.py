@@ -20,8 +20,8 @@ class Row(tuple, Mapping):
     def __getitem__(self, k):
         try:
             return self._dict[k]
-        except KeyError:
-            if isinstance(k, int):
+        except (KeyError, TypeError):
+            if isinstance(k, (int, slice)):
                 return tuple.__getitem__(self, k)
             else:
                 raise
