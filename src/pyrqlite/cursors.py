@@ -166,7 +166,7 @@ class Cursor(object):
             payload = self._request("GET",
                                     "/db/query?" + _urlencode({'q': operation}))
         else:
-            payload = self._request("POST", "/db/execute?transaction",
+            payload = self._request("POST", "/db/execute",
                                     headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
 
         last_insert_id = None
@@ -252,7 +252,7 @@ class Cursor(object):
         statements = []
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
-        payload = self._request("POST", "/db/execute?transaction",
+        payload = self._request("POST", "/db/execute",
                                 headers={'Content-Type': 'application/json'},
                                 body=json.dumps(statements))
         rows_affected = -1
