@@ -42,12 +42,14 @@ class Connection(object):
 
     def __init__(self, host='localhost', port=4001,
                  user=None, password=None, connect_timeout=None,
-                 detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
+                 detect_types=0, max_redirects=UNLIMITED_REDIRECTS,
+                 always_transactions=True):
 
         self.messages = []
         self.host = host
         self.port = port
         self._headers = {}
+        self.always_transactions = always_transactions
         if not (user is None or password is None):
             self._headers['Authorization'] = 'Basic ' + \
                 codecs.encode('{}:{}'.format(user, password).encode('utf-8'),

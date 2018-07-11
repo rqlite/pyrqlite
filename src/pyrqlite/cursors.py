@@ -162,11 +162,14 @@ class Cursor(object):
         operation = self._substitute_params(operation, parameters)
 
         command = self._get_sql_command(operation)
+        transact = ''
+        if self.connection.always_transactions:
+            transact = '?transaction'
         if command in ('SELECT', 'PRAGMA'):
             payload = self._request("GET",
                                     "/db/query?" + _urlencode({'q': operation}))
         else:
-            payload = self._request("POST", "/db/execute",
+            payload = self._request("POST", "/db/execute{0}".format(transact),
                                     headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
 
         last_insert_id = None
@@ -252,7 +255,10 @@ class Cursor(object):
         statements = []
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
-        payload = self._request("POST", "/db/execute",
+        transact = ''
+        if self.connection.always_transactions:
+            transact = '?transaction'
+        payload = self._request("POST", "/db/execute{0}".format(transact),
                                 headers={'Content-Type': 'application/json'},
                                 body=json.dumps(statements))
         rows_affected = -1
