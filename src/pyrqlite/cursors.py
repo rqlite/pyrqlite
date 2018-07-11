@@ -283,8 +283,12 @@ class Cursor(object):
 
     def fetchmany(self, size=None):
         if size is None:
-            size = self.arraysize
-        raise NotImplementedError(self)
+            size = max(self.arraysize, len(self._rows))
+        size = min(len(self._rows), size)
+        rows = []
+        while self.rownumber < size:
+            rows.append(self.fetchone())
+        return rows
 
     def fetchall(self):
         rows = []
