@@ -43,7 +43,7 @@ class Connection(object):
     def __init__(self, host='localhost', port=4001,
                  user=None, password=None, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS,
-                 always_transactions=True):
+                 always_transactions=True, default_paramstyle='qmark'):
 
         self.messages = []
         self.host = host

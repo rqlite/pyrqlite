@@ -151,6 +151,8 @@ class Cursor(object):
         return sql_str.split(None, 1)[0].upper()
 
     def convert_query(self, query):
+        if not self.connection.default_paramstyle == 'qmark':
+            return query
         FORMAT_QMARK_REGEX = re.compile(r'(?<!%)%s')
         return FORMAT_QMARK_REGEX.sub('?', query).replace('%%', '%')
 
