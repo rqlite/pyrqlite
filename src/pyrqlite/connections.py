@@ -137,10 +137,12 @@ class Connection(object):
         transaction support. """
         pass
 
-    def cursor(self):
+    def cursor(self, factory=None):
         """Return a new Cursor Object using the connection."""
-        return Cursor(self)
+        if factory:
+            return factory(self)
+        else:
+            return Cursor(self)
 
     def execute(self, *args, **kwargs):
         return self.cursor().execute(*args, **kwargs)
-
