@@ -276,9 +276,9 @@ class Cursor(object):
         return result
 
     def fetchmany(self, size=None):
-        if size is None:
-            size = self.arraysize
-        raise NotImplementedError(self)
+        remaining = self.arraysize if size is None else size
+        remaining = min(remaining, self.rowcount - self.rownumber)
+        return [self.fetchone() for i in range(remaining)]
 
     def fetchall(self):
         rows = []
