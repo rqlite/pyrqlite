@@ -5,10 +5,10 @@ import codecs
 import logging
 
 try:
-    from http.client import HTTPConnection
+    from http.client import HTTPConnection, HTTPSConnection
 except ImportError:
     # pylint: disable=import-error
-    from httplib import HTTPConnection
+    from httplib import HTTPConnection, HTTPSConnection
 
 try:
     from urllib.parse import urlparse
@@ -40,11 +40,12 @@ class Connection(object):
         NotSupportedError,
     )
 
-    def __init__(self, host='localhost', port=4001,
+    def __init__(self, scheme='http', host='localhost', port=4001,
                  user=None, password=None, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
+        self.scheme = scheme
         self.host = host
         self.port = port
         self._headers = {}
@@ -65,8 +66,14 @@ class Connection(object):
         self._connection = self._init_connection()
 
     def _init_connection(self):
-        return HTTPConnection(self.host, port=self.port,
-                              timeout=None if self.connect_timeout is None else float(self.connect_timeout))
+        if self.scheme == 'http':
+            cls = HTTPConnection
+        elif self.scheme == 'https':
+            cls = HTTPSConnection
+        else:
+            raise Connection.ProgrammingError('Unsupported scheme %r' % self.scheme)
+        return cls(self.host, port=self.port,
+                   timeout=None if self.connect_timeout is None else float(self.connect_timeout))
 
     def _retry_request(self, method, uri, body=None, headers={}):
         tries = 10
