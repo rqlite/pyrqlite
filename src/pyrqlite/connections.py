@@ -41,7 +41,7 @@ class Connection(object):
     )
 
     def __init__(self, scheme='http', host='localhost', port=4001, ssl_context=None,
-                 user=None, password=None, connect_timeout=None,
+                 user=None, password=None, timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
@@ -55,7 +55,7 @@ class Connection(object):
                 codecs.encode('{}:{}'.format(user, password).encode('utf-8'),
                               'base64').decode('utf-8').rstrip('\n')
 
-        self.connect_timeout = connect_timeout
+        self.timeout = timeout
         self.max_redirects = max_redirects
         self.detect_types = detect_types
         self.parse_decltypes = detect_types & PARSE_DECLTYPES
@@ -67,7 +67,7 @@ class Connection(object):
         self._connection = self._init_connection()
 
     def _init_connection(self):
-        timeout = None if self.connect_timeout is None else float(self.connect_timeout)
+        timeout = None if self.timeout is None else float(self.timeout)
         if self.scheme in ('http', ':memory:'):
             return HTTPConnection(self.host, port=self.port, timeout=timeout)
         elif self.scheme == 'https':
