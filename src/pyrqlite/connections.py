@@ -41,7 +41,7 @@ class Connection(object):
     )
 
     def __init__(self, scheme='http', host='localhost', port=4001,
-                 user=None, password=None, connect_timeout=None,
+                 user=None, password=None, timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
         self.messages = []
@@ -54,7 +54,7 @@ class Connection(object):
                 codecs.encode('{}:{}'.format(user, password).encode('utf-8'),
                               'base64').decode('utf-8').rstrip('\n')
 
-        self.connect_timeout = connect_timeout
+        self.timeout = timeout
         self.max_redirects = max_redirects
         self.detect_types = detect_types
         self.parse_decltypes = detect_types & PARSE_DECLTYPES
@@ -73,7 +73,7 @@ class Connection(object):
         else:
             raise Connection.ProgrammingError('Unsupported scheme %r' % self.scheme)
         return cls(self.host, port=self.port,
-                   timeout=None if self.connect_timeout is None else float(self.connect_timeout))
+                   timeout=None if self.timeout is None else float(self.timeout))
 
     def _retry_request(self, method, uri, body=None, headers={}):
         tries = 10
