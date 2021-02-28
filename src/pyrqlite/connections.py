@@ -60,13 +60,13 @@ class Connection(object):
         self.parse_decltypes = detect_types & PARSE_DECLTYPES
         self.parse_colnames = detect_types & PARSE_COLNAMES
         self._ephemeral = None
-        if host == ':memory:':
+        if scheme == ':memory:':
             self._ephemeral = _EphemeralRqlited().__enter__()
             self.host, self.port = self._ephemeral.http
         self._connection = self._init_connection()
 
     def _init_connection(self):
-        if self.scheme == 'http':
+        if self.scheme in ('http', ':memory:'):
             cls = HTTPConnection
         elif self.scheme == 'https':
             cls = HTTPSConnection
