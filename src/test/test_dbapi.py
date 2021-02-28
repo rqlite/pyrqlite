@@ -343,7 +343,10 @@ class CursorTests(unittest.TestCase):
 
     def test_CheckRowcountExecute(self):
         self.cu.execute("delete from test")
-        self.cu.execute("insert into test(name) values ('foo')")
+        self.cu.execute("insert into test(name, income) values (?, ?)", ("?", "1"))
+        self.cu.execute("select name from test where name=?", ("?",))
+        self.assertEqual(self.cu.rowcount, 1,
+            msg="test failed for https://github.com/rqlite/pyrqlite/issues/30")
         self.cu.execute("insert into test(name) values ('foo')")
         self.cu.execute("update test set name='bar'")
         self.assertEqual(self.cu.rowcount, 2)

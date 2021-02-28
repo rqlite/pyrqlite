@@ -139,9 +139,13 @@ class Cursor(object):
                 raise ProgrammingError('Named binding used, but you supplied a'
                                        ' sequence (which has no names): %s %s' %
                                        (operation, parameters))
-            for i in range(len(parameters)):
-                operation = operation.replace('?', 
-                                              _adapt_from_python(parameters[i]), 1)
+            parts = operation.split('?')
+            subst = []
+            for i, part in enumerate(parts):
+                subst.append(part)
+                if i < len(parameters):
+                    subst.append(_adapt_from_python(parameters[i]))
+            operation = ''.join(subst)
 
         return operation
 
