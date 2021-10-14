@@ -25,9 +25,12 @@ from __future__ import print_function
 
 import sys
 try:
-    import test.support as test_support
+    import test.support.warnings_helper as test_support
 except ImportError:
-    from test import test_support
+    try:
+        import test.support as test_support
+    except ImportError:
+        from test import test_support
 import unittest
 
 import pyrqlite.dbapi2 as sqlite
