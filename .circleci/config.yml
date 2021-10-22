@@ -9,6 +9,7 @@ jobs:
       - checkout
       - run: pip install pytest
       - run: pip install pytest-cov
+      - run: pip install requests
       - run:
           name: Run tests
           environment:
