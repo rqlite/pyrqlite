@@ -7,12 +7,14 @@ jobs:
       - image: cimg/python:3.6.10
     steps:
       - checkout
-      - run: pip install pytest
-      - run: pip install pytest-cov
-      - run: pip install requests
+      - run: pip install pytest pytest-cov requests
+      - run: |
+              curl -L https://github.com/rqlite/rqlite/releases/download/v6.6.5/rqlite-v6.6.5-linux-amd64.tar.gz -o rqlite-v6.6.5-linux-amd64.tar.gz
+              tar xvfz rqlite-v6.6.5-linux-amd64.tar.gz
+              cp rqlite-v6.6.5-darwin-amd64/rqlited /home/circle/project/rqlited
       - run:
           name: Run tests
           environment:
-                  RQLITED_PATH: rqlited
+                  RQLITED_PATH: /home/circle/project/rqlited
                   PYTHONPATH: src
           command: python setup.py test
