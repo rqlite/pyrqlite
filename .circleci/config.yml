@@ -7,7 +7,7 @@ jobs:
       - image: cimg/python:3.6.10
     steps:
       - checkout
-      - run: sudo pip install pytest
+      - run: pip install pytest
       - run:
           name: Run tests
           environment:
