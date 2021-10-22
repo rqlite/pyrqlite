@@ -12,4 +12,4 @@ jobs:
           environment:
                   RQLITED_PATH: rqlited
                   PYTHONPATH: src
-          command: cd pyrqlite && python setup.py test
+          command: pwd && ls -all && python setup.py test
