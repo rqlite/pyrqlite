@@ -1,6 +1,8 @@
 =======
 pyrqlite
 =======
+[![Circle CI](https://circleci.com/gh/rqlite/pyrqlite/tree/master.svg?style=svg)](https://circleci.com/gh/rqlite/pyrqlite/tree/master)
+
 This package contains a pure-Python rqlite client library.
 
 .. contents::
