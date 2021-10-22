@@ -12,4 +12,4 @@ jobs:
           environment:
                   RQLITED_PATH: rqlited
                   PYTHONPATH: src
-          command: PYTHONPATH=src/ python setup.py test  
+          command: cd && python setup.py test
