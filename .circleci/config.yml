@@ -11,7 +11,7 @@ jobs:
       - run: |
               curl -L https://github.com/rqlite/rqlite/releases/download/v6.6.5/rqlite-v6.6.5-linux-amd64.tar.gz -o rqlite-v6.6.5-linux-amd64.tar.gz
               tar xvfz rqlite-v6.6.5-linux-amd64.tar.gz
-              cp rqlite-v6.6.5-darwin-amd64/rqlited /home/circle/project/rqlited
+              cp rqlite-v6.6.5-linux-amd64/rqlited /home/circle/project/rqlited
       - run:
           name: Run tests
           environment:
