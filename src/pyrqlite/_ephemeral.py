@@ -2,6 +2,7 @@
 import contextlib
 import errno
 import os
+import requests
 import shutil
 import socket
 import subprocess
@@ -9,6 +10,7 @@ import sys
 import tempfile
 import time
 
+RQLITED_PATH = os.environ['RQLITED_PATH']
 
 class EphemeralRqlited(object):
     def __init__(self):
@@ -44,6 +46,11 @@ class EphemeralRqlited(object):
         except socket.error:
             return False
 
+    @staticmethod
+    def _test_readyz(host, port):
+        r = requests.get('http://%s:%d/readyz' % (host, port))
+        return r.status_code == 200
+
     def _start(self):
         self._tempdir = tempfile.mkdtemp()
         self.host = 'localhost'
@@ -55,7 +62,7 @@ class EphemeralRqlited(object):
             self.http = (self.host, http_port)
             self.raft = (self.host, raft_port)
             with open(os.devnull, mode='wb', buffering=0) as devnull:
-                filename = 'rqlited'
+                filename = RQLITED_PATH
                 try:
                     self._proc = subprocess.Popen([filename,
                         '-http-addr', '{}:{}'.format(*self.http),
@@ -68,6 +75,9 @@ class EphemeralRqlited(object):
                     raise
 
             while not self._test_port(*self.http) and self._proc.poll() is None:
+                time.sleep(0.5)
+
+            while not self._test_readyz(*self.http):
                 time.sleep(0.5)
 
             if self._proc.poll() is not None:

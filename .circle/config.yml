@@ -1,0 +1,15 @@
+version: 2.1
+orbs:
+  python: circleci/python@1.0.0
+jobs:
+  build:
+    docker:
+      - image: cimg/python:3.6.10
+    steps:
+      - checkout
+      - run:
+          name: Run tests
+          environment:
+                  RQLITED_PATH: rqlited
+                  PYTHONPATH: src
+          command: PYTHONPATH=src/ python setup.py test  
