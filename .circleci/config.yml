@@ -7,9 +7,10 @@ jobs:
       - image: cimg/python:3.6.10
     steps:
       - checkout
+      - run: sudo pip install pytest
       - run:
           name: Run tests
           environment:
                   RQLITED_PATH: rqlited
                   PYTHONPATH: src
-          command: pwd && ls -all && python setup.py test
+          command: python setup.py test
