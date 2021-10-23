@@ -2,13 +2,19 @@
 import contextlib
 import errno
 import os
-import requests
 import shutil
 import socket
 import subprocess
 import sys
 import tempfile
 import time
+
+try:
+    from http.client import HTTPConnection
+except ImportError:
+    # pylint: disable=import-error
+    from httplib import HTTPConnection
+
 
 RQLITED_PATH = os.environ['RQLITED_PATH']
 
@@ -48,8 +54,12 @@ class EphemeralRqlited(object):
 
     @staticmethod
     def _test_readyz(host, port):
-        r = requests.get('http://%s:%d/readyz' % (host, port))
-        return r.status_code == 200
+        try:
+            with contextlib.closing(HTTPConnection(host, port=port)) as conn:
+                conn.request("GET", "/readyz")
+                return conn.getresponse().status == 200
+        except Exception:
+            return False
 
     def _start(self):
         self._tempdir = tempfile.mkdtemp()

@@ -7,7 +7,7 @@ jobs:
       - image: cimg/python:3.6.10
     steps:
       - checkout
-      - run: pip install pytest pytest-cov requests
+      - run: pip install pytest pytest-cov
       - run: |
               curl -L https://github.com/rqlite/rqlite/releases/download/v6.7.0/rqlite-v6.7.0-linux-amd64.tar.gz -o rqlite-v6.7.0-linux-amd64.tar.gz
               tar xvfz rqlite-v6.7.0-linux-amd64.tar.gz
