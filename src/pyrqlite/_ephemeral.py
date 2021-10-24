@@ -16,7 +16,7 @@ except ImportError:
     from httplib import HTTPConnection
 
 
-RQLITED_PATH = os.environ['RQLITED_PATH']
+RQLITED_PATH = os.environ.get("RQLITED_PATH", "rqlited")
 
 class EphemeralRqlited(object):
     def __init__(self):
