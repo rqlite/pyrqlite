@@ -40,7 +40,7 @@ class Connection(object):
         NotSupportedError,
     )
 
-    def __init__(self, scheme='http', host='localhost', port=4001,
+    def __init__(self, scheme='http', host='localhost', port=4001, ssl_context=None,
                  user=None, password=None, connect_timeout=None,
                  detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
 
@@ -48,6 +48,7 @@ class Connection(object):
         self.scheme = scheme
         self.host = host
         self.port = port
+        self.ssl_context = ssl_context
         self._headers = {}
         if not (user is None or password is None):
             self._headers['Authorization'] = 'Basic ' + \
@@ -66,14 +67,14 @@ class Connection(object):
         self._connection = self._init_connection()
 
     def _init_connection(self):
+        timeout = None if self.connect_timeout is None else float(self.connect_timeout)
         if self.scheme in ('http', ':memory:'):
-            cls = HTTPConnection
+            return HTTPConnection(self.host, port=self.port, timeout=timeout)
         elif self.scheme == 'https':
-            cls = HTTPSConnection
+            return HTTPSConnection(self.host, port=self.port, context=self.ssl_context,
+                                   timeout=timeout)
         else:
             raise Connection.ProgrammingError('Unsupported scheme %r' % self.scheme)
-        return cls(self.host, port=self.port,
-                   timeout=None if self.connect_timeout is None else float(self.connect_timeout))
 
     def _retry_request(self, method, uri, body=None, headers={}):
         tries = 10
