@@ -1,4 +1,7 @@
 
+## 2.1.1 (Dec 23 2021)
+- [PR #40](https://github.com/rqlite/pyrqlite/pull/40): Support ssl_context.
+
 ## 2.1 (Feb 28 2021)
 - [PR #4](https://github.com/rqlite/pyrqlite/pull/4): Leader redirection.
 - [PR #22](https://github.com/rqlite/pyrqlite/pull/22): Basic auth support.
