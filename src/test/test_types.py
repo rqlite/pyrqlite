@@ -40,7 +40,7 @@ class SqliteTypeTests(unittest.TestCase):
             cls.cur.execute("drop table test")
 
     def setUp(self):
-        self.cur.execute("create table test(i integer, s varchar, f number, b blob)")
+        self.cur.execute("create table test(i INTEGER, s VARCHAR, f NUMBER, b BLOB)")
 
     def tearDown(self):
         self.cur.execute("drop table test")
@@ -123,10 +123,10 @@ class SqliteTypeTests(unittest.TestCase):
         rows = self.cur.fetchall()
         self.assertEqual(rows,
             [
-                (0, 'i', 'integer', 0, None, 0),
-                (1, 's', 'varchar', 0, None, 0),
-                (2, 'f', 'number', 0, None, 0),
-                (3, 'b', 'blob', 0, None, 0),
+                (0, 'i', 'INTEGER', 0, None, 0),
+                (1, 's', 'VARCHAR', 0, None, 0),
+                (2, 'f', 'NUMBER', 0, None, 0),
+                (3, 'b', 'BLOB', 0, None, 0),
             ]
         )
 
