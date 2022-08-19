@@ -152,7 +152,7 @@ class Cursor(object):
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
 
-    def execute(self, operation, parameters=None, queue=False):
+    def execute(self, operation, parameters=None, queue=False, wait=False):
         if not isinstance(operation, basestring):
             raise ValueError(
                              "argument must be a string, not '{}'".format(type(operation).__name__))
@@ -167,6 +167,8 @@ class Cursor(object):
             path = "/db/execute?transaction"
             if queue:
                 path = path + "&queue"
+            if wait:
+                path = path +"&wait"
             payload = self._request("POST", path,
                                     headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
 
@@ -245,7 +247,7 @@ class Cursor(object):
             self.rowcount = len(self._rows)
         return self
 
-    def executemany(self, operation, seq_of_parameters=None, queue=False):
+    def executemany(self, operation, seq_of_parameters=None, queue=False, wait=False):
         if not isinstance(operation, basestring):
             raise ValueError(
                 "argument must be a string, not '{}'".format(type(operation).__name__))
@@ -257,6 +259,8 @@ class Cursor(object):
         path = "/db/execute?transaction"
         if queue:
             path = path + "&queue"
+        if wait:
+            path = path +"&wait"
         payload = self._request("POST", path,
                                 headers={'Content-Type': 'application/json'},
                                 body=json.dumps(statements))
