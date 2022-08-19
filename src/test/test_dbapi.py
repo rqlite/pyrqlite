@@ -275,6 +275,12 @@ class CursorTests(unittest.TestCase):
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
+    def test_CheckExecuteParamListQueueWait(self):
+        self.cu.execute("insert into test(name) values ('foo')", queue=True, wait=True)
+        self.cu.execute("select name from test where name=?", ["foo"])
+        row = self.cu.fetchone()
+        self.assertEqual(row[0], "foo")
+
     def test_CheckExecuteParamSequence(self):
         class L(object):
             def __len__(self):
