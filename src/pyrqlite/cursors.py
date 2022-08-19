@@ -161,7 +161,7 @@ class Cursor(object):
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
-            payload = self._request("GET",[]
+            payload = self._request("GET",
                                     "/db/query?" + _urlencode({'q': operation}))
         else:
             path = "/db/execute?transaction"
