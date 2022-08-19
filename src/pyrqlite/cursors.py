@@ -152,7 +152,7 @@ class Cursor(object):
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
 
-    def execute(self, operation, parameters=None):
+    def execute(self, operation, parameters=None, queue=False):
         if not isinstance(operation, basestring):
             raise ValueError(
                              "argument must be a string, not '{}'".format(type(operation).__name__))
@@ -161,10 +161,13 @@ class Cursor(object):
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
-            payload = self._request("GET",
+            payload = self._request("GET",[]
                                     "/db/query?" + _urlencode({'q': operation}))
         else:
-            payload = self._request("POST", "/db/execute?transaction",
+            path = "/db/execute?transaction"
+            if queue:
+                path = path + "&queue"
+            payload = self._request("POST", path,
                                     headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
 
         last_insert_id = None
@@ -242,7 +245,7 @@ class Cursor(object):
             self.rowcount = len(self._rows)
         return self
 
-    def executemany(self, operation, seq_of_parameters=None):
+    def executemany(self, operation, seq_of_parameters=None, queue=False):
         if not isinstance(operation, basestring):
             raise ValueError(
                 "argument must be a string, not '{}'".format(type(operation).__name__))
@@ -250,7 +253,11 @@ class Cursor(object):
         statements = []
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
-        payload = self._request("POST", "/db/execute?transaction",
+
+        path = "/db/execute?transaction"
+        if queue:
+            path = path + "&queue"
+        payload = self._request("POST", path,
                                 headers={'Content-Type': 'application/json'},
                                 body=json.dumps(statements))
         rows_affected = -1
