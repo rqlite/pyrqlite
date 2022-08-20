@@ -103,7 +103,7 @@ class Cursor(object):
 
         # Matches but no parameters
         if param_matches > 0 and parameters is None:
-            raise ProgrammingError('paramater required but not given: %s' %
+            raise ProgrammingError('parameter required but not given: %s' %
                                    operation)
 
         # No regex matches and no parameters.
@@ -111,7 +111,7 @@ class Cursor(object):
             return operation
 
         if len(qmark_matches) > 0 and len(named_matches) > 0:
-            raise ProgrammingError('different paramater types in operation not'
+            raise ProgrammingError('different parameter types in operation not'
                                    'permitted: %s %s' % 
                                    (operation, parameters))
 
