@@ -23,9 +23,7 @@ Installation
 
 The last stable release is available on github and can be installed with ``pip``::
 
-    $ cd
-    $ git clone https://github.com/rqlite/pyrqlite.git
-    $ pip install ./pyrqlite
+    $ pip install git+https://github.com/rqlite/pyrqlite.git
 
 Alternatively (e.g. if ``pip`` is not available), a tarball can be downloaded
 from GitHub and installed with Setuptools::
