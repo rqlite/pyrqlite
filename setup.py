@@ -15,7 +15,6 @@ from pyrqlite.constants import (
     __author__,
     __email__,
     __license__,
-    __version__,
 )
 
 class PyTest(Command):
@@ -72,7 +71,6 @@ class PyLint(Command):
 
 setup(
     name="pyrqlite",
-    version=__version__,
     url='https://github.com/rqlite/pyrqlite/',
     author=__author__,
     author_email=__email__,
