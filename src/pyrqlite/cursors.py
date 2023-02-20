@@ -70,6 +70,8 @@ class Cursor(object):
             body)
         response = self.connection._fetch_response(
             method, uri, body=body, headers=headers)
+        if response.code != 200:
+            raise Error("received unexpected http status: %d" % response.code)
         logger.debug(
             "status: %s reason: %s",
             response.status,
