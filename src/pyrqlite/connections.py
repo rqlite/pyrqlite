@@ -160,7 +160,7 @@ class Connection(object):
             if reconnect:
                 self._connection = self._init_connection()
             else:
-                raise Error("Already closed")
+                raise self.Error("Already closed")
         try: 
             self.execute("SELECT 1")
         except Exception:
@@ -169,3 +169,4 @@ class Connection(object):
                 self.ping(False)
             else:
                 raise
+                
