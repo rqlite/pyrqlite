@@ -154,3 +154,19 @@ class Connection(object):
 
     def execute(self, *args, **kwargs):
         return self.cursor().execute(*args, **kwargs)
+
+    def ping(self, reconnect=True):
+        if self._connection.sock is None:
+            if reconnect:
+                self._connection = self._init_connection()
+            else:
+                raise self.Error("Already closed")
+        try: 
+            self.execute("SELECT 1")
+        except Exception:
+            if reconnect:
+                self._connection = self._init_connection()
+                self.ping(False)
+            else:
+                raise
+                

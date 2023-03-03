@@ -150,6 +150,9 @@ class ConnectionTests(unittest.TestCase):
         #self.cx.close()
         pass
 
+    def test_CheckPing(self):
+        self.cx.ping()
+
     def test_CheckExceptions(self):
         # Optional DB-API extension.
         self.assertEqual(self.cx.Warning, sqlite.Warning)
