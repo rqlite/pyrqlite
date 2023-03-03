@@ -12,7 +12,7 @@ jobs:
       - run: pip install pytest pytest-cov
       - run: |
               curl -L https://github.com/rqlite/rqlite/releases/download/v${RQLITE_VERSION}/rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz -o rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz
-              tar xvfz rqlite-v7${RQLITE_VERSION}-linux-amd64.tar.gz
+              tar xvfz rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz
               cp rqlite-v${RQLITE_VERSION}-linux-amd64/rqlited /home/circleci/project/rqlited
       - run:
           name: Run tests
