@@ -5,13 +5,15 @@ jobs:
   build:
     docker:
       - image: cimg/python:3.6.10
+    environment:
+      RQLITE_VERSION: 7.2.0
     steps:
       - checkout
       - run: pip install pytest pytest-cov
       - run: |
-              curl -L https://github.com/rqlite/rqlite/releases/download/v7.2.0/rqlite-v7.2.0-linux-amd64.tar.gz -o rqlite-v7.2.0-linux-amd64.tar.gz
-              tar xvfz rqlite-v7.2.0-linux-amd64.tar.gz
-              cp rqlite-v7.2.0-linux-amd64/rqlited /home/circleci/project/rqlited
+              curl -L https://github.com/rqlite/rqlite/releases/download/v${ENV}/rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz -o rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz
+              tar xvfz rqlite-v7${RQLITE_VERSION}-linux-amd64.tar.gz
+              cp rqlite-v${RQLITE_VERSION}-linux-amd64/rqlited /home/circleci/project/rqlited
       - run:
           name: Run tests
           environment:
