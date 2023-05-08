@@ -1,3 +1,23 @@
+[project]
+name = "pyrqlite"
+version = "2.2.0"
+authors = [
+  { name="Zac Medico", email="zmedico@gmail.com" },
+  { name="Philip O'Toole", email="philip.otoole@yahoo.com" },
+]
+description = "Python rqlite client library"
+readme = "README.md"
+requires-python = ">=3.3"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://www.rqlite.io"
+"Bug Tracker" = "https://github.com/rqlite/pyrqlite/issues"
+
 [build-system]
 requires = [
 	"setuptools",
