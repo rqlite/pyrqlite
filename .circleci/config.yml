@@ -6,7 +6,7 @@ jobs:
     docker:
       - image: cimg/python:3.6.10
     environment:
-      RQLITE_VERSION: 7.13.2
+      RQLITE_VERSION: 7.16.0
     steps:
       - checkout
       - run: pip install pytest pytest-cov
