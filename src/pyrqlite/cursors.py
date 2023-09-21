@@ -154,7 +154,7 @@ class Cursor(object):
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
 
-    def execute(self, operation, parameters=None, queue=False, wait=False):
+    def execute(self, operation, parameters=None, queue=False, wait=False, consistency=None):
         if not isinstance(operation, basestring):
             raise ValueError(
                              "argument must be a string, not '{}'".format(type(operation).__name__))
@@ -163,8 +163,10 @@ class Cursor(object):
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
-            payload = self._request("GET",
-                                    "/db/query?" + _urlencode({'q': operation}))
+            params = {'q': operation}
+            if consistency:
+                params["level"] = consistency
+            payload = self._request("GET", "/db/query?" + _urlencode(params))
         else:
             path = "/db/execute?transaction"
             if queue:
