@@ -284,6 +284,13 @@ class CursorTests(unittest.TestCase):
         row = self.cu.fetchone()
         self.assertEqual(row[0], "foo")
 
+    def test_CheckExecuteParamListConsistency(self):
+        self.cu.execute("insert into test(name) values ('foo')")
+        for c in ['strong', 'weak', 'none', None]:
+            self.cu.execute("select name from test where name=?", ["foo"], consistency=c)
+            row = self.cu.fetchone()
+            self.assertEqual(row[0], "foo")
+
     def test_CheckExecuteParamSequence(self):
         class L(object):
             def __len__(self):
