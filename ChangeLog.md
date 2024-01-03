@@ -1,4 +1,7 @@
 
+## 2.2.1 (Jan 3 2024)
+- [PR #57](https://github.com/rqlite/pyrqlite/issues/57): Add project.license to pyproject.toml.
+
 ## 2.1.1 (Dec 23 2021)
 - [PR #40](https://github.com/rqlite/pyrqlite/pull/40): Support ssl_context.
 

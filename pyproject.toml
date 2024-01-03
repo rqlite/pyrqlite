@@ -1,6 +1,6 @@
 [project]
 name = "pyrqlite"
-version = "2.2.0"
+version = "2.2.1"
 authors = [
   { name="Zac Medico", email="zmedico@gmail.com" },
   { name="Philip O'Toole", email="philip.otoole@yahoo.com" },
@@ -13,6 +13,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.license]
+file = "LICENSE"
 
 [project.urls]
 "Homepage" = "https://www.rqlite.io"
