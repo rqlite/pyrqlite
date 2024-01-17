@@ -1,4 +1,7 @@
 
+## 2.2.2 (Jan 21 2024)
+- [PR #59](https://github.com/rqlite/pyrqlite/pull/59): Row: Allow non-unique column names.
+
 ## 2.2.1 (Jan 3 2024)
 - [PR #57](https://github.com/rqlite/pyrqlite/issues/57): Add project.license to pyproject.toml.
 

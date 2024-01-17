@@ -83,8 +83,8 @@ The following code creates a connection and executes some statements:
 This example will print:
 
 
-    OrderedDict([('id', 1), ('name', 'a')])
-    OrderedDict([('id', 2), ('name', 'b')])
+    (1, 'a')
+    (2, 'b')
     
 Paramstyle
 ---------

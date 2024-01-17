@@ -15,9 +15,19 @@ class Row(tuple, Mapping):
 
     def __init__(self, items):
         super(Row, self).__init__()
-        self._dict = OrderedDict(items)
+        self._items = tuple(items)
+        # If the same column name appears more than once then only the
+        # value for the first occurence is indexed (see __getitem__).
+        d = {}
+        for k, v in self._items:
+            d.setdefault(k, v)
+        self._dict = d
 
     def __getitem__(self, k):
+        """
+        If the same column name appears more than once then this returns
+        the value from the first matching column just like sqlite3.Row.
+        """
         try:
             return self._dict[k]
         except (KeyError, TypeError):
@@ -27,18 +37,40 @@ class Row(tuple, Mapping):
                 raise
 
     def __iter__(self):
+        """
+        Return an iterator over the values of the row.
+
+        View contains all values.
+        """
         return tuple.__iter__(self)
 
+    def items(self):
+        """
+        Return a new view of the row’s items ((key, value) pairs).
+
+        View contains all items, multiple items can have the same key.
+        """
+        for item in self._items:
+            yield item
+
+    def values(self):
+        """
+        Return a new view of the rows’s values.
+
+        View contains all values.
+        """
+        for item in self._items:
+            yield item[1]
+
     def keys(self):
-        for k in self._dict:
-            if not isinstance(k, int):
-                yield k
+        """
+        Returns a list of column names which are not necessarily
+        unique, just like sqlite3.Row.
+        """
+        return [item[0] for item in self._items]
 
     def __len__(self):
         return tuple.__len__(self)
-
-    def __str__(self):
-        return str(self._dict)
 
     def __delitem__(self, k):
         raise NotImplementedError(self)
