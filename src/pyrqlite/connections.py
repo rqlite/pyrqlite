@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import codecs
 import logging
+import warnings
 
 try:
     from http.client import HTTPConnection, HTTPSConnection
@@ -40,9 +41,19 @@ class Connection(object):
         NotSupportedError,
     )
 
-    def __init__(self, scheme='http', host='localhost', port=4001, ssl_context=None,
-                 user=None, password=None, timeout=None,
-                 detect_types=0, max_redirects=UNLIMITED_REDIRECTS):
+    def __init__(
+        self,
+        scheme="http",
+        host="localhost",
+        port=4001,
+        ssl_context=None,
+        user=None,
+        password=None,
+        connect_timeout=DeprecationWarning,
+        timeout=None,
+        detect_types=0,
+        max_redirects=UNLIMITED_REDIRECTS,
+    ):
 
         self.messages = []
         self.scheme = scheme
@@ -55,6 +66,13 @@ class Connection(object):
                 codecs.encode('{}:{}'.format(user, password).encode('utf-8'),
                               'base64').decode('utf-8').rstrip('\n')
 
+        if connect_timeout is not DeprecationWarning:
+            warnings.warn(
+                "connect_timeout parameter is deprecated and renamed to timeout",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            timeout = connect_timeout
         self.timeout = timeout
         self.max_redirects = max_redirects
         self.detect_types = detect_types
@@ -65,6 +83,15 @@ class Connection(object):
             self._ephemeral = _EphemeralRqlited().__enter__()
             self.host, self.port = self._ephemeral.http
         self._connection = self._init_connection()
+
+    @property
+    def connect_timeout(self):
+        warnings.warn(
+            "connect_timeout attribute is deprecated and renamed to timeout",
+            DeprecationWarning,
+            stacklevel=1,
+        )
+        return self.timeout
 
     def _init_connection(self):
         timeout = None if self.timeout is None else float(self.timeout)
