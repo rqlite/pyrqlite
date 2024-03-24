@@ -97,7 +97,7 @@ class Cursor(object):
         param_matches = 0
 
         qmark_re = re.compile(r"(\?)")
-        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
+        named_re = re.compile(r"(:{1}[a-zA-Z_]+?\b)")
 
         qmark_matches = qmark_re.findall(operation)
         named_matches = named_re.findall(operation)
@@ -123,7 +123,7 @@ class Cursor(object):
                 raise ProgrammingError('Unamed binding used, but you supplied '
                                        'a dictionary (which has only names): '
                                        '%s %s' % (operation, parameters))
-            for op_key in named_matches:
+            for op_key in sorted(named_matches, key=len, reverse=True):
                 try:
                     operation = operation.replace(op_key, 
                                                  _adapt_from_python(parameters[op_key[1:]]))
