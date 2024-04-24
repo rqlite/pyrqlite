@@ -1,3 +1,7 @@
+-------------
+pyrqlite
+-------------
+
 .. image:: https://circleci.com/gh/rqlite/pyrqlite.svg?style=svg
     :target: https://circleci.com/gh/rqlite/pyrqlite
 
