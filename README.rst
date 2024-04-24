@@ -35,6 +35,8 @@ from GitHub and installed with Setuptools::
     $ python setup.py install
     $ # The folder pyrqlite* can be safely removed now.
 
+A final option is to simply clone the repo, and execute "python setup.py install".
+
 Test Suite
 ----------
 
