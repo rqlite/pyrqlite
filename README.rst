@@ -96,19 +96,19 @@ This example will print:
     (2, 'b')
     
 Paramstyle
----------
+-------------
 
 Only qmark and named paramstyles (as defined in PEP 249) are supported. 
 
 Limitations
----------
+-------------
 Transactions are not supported.
 
 Resources
----------
+-------------
 DB-API 2.0: http://www.python.org/dev/peps/pep-0249
 
 
 License
--------
+-------------
 pyrqlite is released under the MIT License. See LICENSE for more information.
