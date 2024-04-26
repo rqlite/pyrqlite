@@ -26,16 +26,22 @@ The last stable release is available on github and can be installed with ``pip``
 
     $ pip install git+https://github.com/rqlite/pyrqlite.git
 
-Alternatively (e.g. if ``pip`` is not available), a tarball can be downloaded
+You can also just clone the repo and install it from source::
+
+    $ git clone https://github.com/rqlite/pyrqlite.git
+    $ cd pyrqlite
+    $ python setup.py install
+
+Finally (e.g. if ``pip`` is not available), a tarball can be downloaded
 from GitHub and installed with Setuptools::
 
-    $ # X.X is the desired pyrqlite version (e.g. 0.5 or 0.6).
-    $ curl -L https://github.com/rqlite/tarball/pyrqlite-X.X | tar xz
+    $ # X.Y.Z is the desired pyrqlite version (e.g. 2.2.1).
+    $ curl -L https://github.com/rqlite/pyrqlite/archive/refs/tags/vX.Y.Z.tar.gz | tar xz
     $ cd pyrqlite*
     $ python setup.py install
     $ # The folder pyrqlite* can be safely removed now.
 
-A final option is to simply clone the repo, and execute "python setup.py install".
+You mean need to run the installation process with ``root`` privileges.
 
 Test Suite
 ----------
