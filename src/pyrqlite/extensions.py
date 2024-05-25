@@ -108,7 +108,7 @@ converters = {
     'NULL': lambda x: None,
     'BLOB': lambda x: x,
     'DATE': functools.partial(_null_wrapper, _convert_date),
-    'DATETIME': lambda x: x.replace('T', ' ').rstrip('Z'),
+    'DATETIME': lambda x: x.replace('T', ' ').rstrip('Z') if x is not None else None,
     'TIMESTAMP': functools.partial(_null_wrapper, _convert_timestamp),
 }
 
