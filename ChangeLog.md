@@ -1,3 +1,5 @@
+## 2.2.3 (May 25 2024)
+- [PR #59](https://github.com/rqlite/pyrqlite/pull/62): Support for empty Datetime column.
 
 ## 2.2.2 (Jan 21 2024)
 - [PR #59](https://github.com/rqlite/pyrqlite/pull/59): Row: Allow non-unique column names.

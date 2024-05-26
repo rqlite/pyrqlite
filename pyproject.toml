@@ -1,6 +1,6 @@
 [project]
 name = "pyrqlite"
-version = "2.2.2"
+version = "2.2.3"
 authors = [
   { name="Zac Medico", email="zmedico@gmail.com" },
   { name="Philip O'Toole", email="philip.otoole@yahoo.com" },
