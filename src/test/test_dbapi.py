@@ -279,7 +279,7 @@ class CursorTests(unittest.TestCase):
 
     def test_CheckExecuteParamListConsistency(self):
         self.cu.execute("insert into test(name) values ('foo')")
-        for c in ['strong', 'weak', 'none', None]:
+        for c in ['strong', 'linearizable', 'weak', 'none', None]:
             self.cu.execute("select name from test where name=?", ["foo"], consistency=c)
             row = self.cu.fetchone()
             self.assertEqual(row[0], "foo")
