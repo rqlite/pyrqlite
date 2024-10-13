@@ -1,8 +1,8 @@
 version: 2.1
 jobs:
   build:
-    docker:
-      - image: cimg/python:latest
+    machine:
+      image: ubuntu-2004:202201-02
     environment:
       RQLITE_VERSION: 8.24.7
     steps:
