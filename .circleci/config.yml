@@ -7,6 +7,7 @@ jobs:
       RQLITE_VERSION: 8.24.7
     steps:
       - checkout
+      - run: cat /etc/lsb-release
       - run: pip install pytest pytest-cov
       - run: |
               curl -L https://github.com/rqlite/rqlite/releases/download/v${RQLITE_VERSION}/rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz -o rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz
