@@ -95,7 +95,7 @@ class Connection(object):
 
     def _init_connection(self):
         timeout = None if self.timeout is None else float(self.timeout)
-        if self.scheme in ('http', ':memory:'):
+        if self.scheme == "http":
             return HTTPConnection(self.host, port=self.port, timeout=timeout)
         elif self.scheme == 'https':
             return HTTPSConnection(self.host, port=self.port, context=self.ssl_context,
