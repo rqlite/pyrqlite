@@ -1,4 +1,3 @@
-
 from __future__ import unicode_literals
 
 from collections import OrderedDict
@@ -88,12 +87,45 @@ class Cursor(object):
                     indent=4))
         return response_json
 
+    def _strip_strings(self, operation):
+        '''
+        This function removes string literals from the SQL operation.
+        It handles both single-quoted and double-quoted strings,
+        accounting for escaped quotes and other edge cases.
+        '''
+        result = []
+        in_single_quote = False
+        in_double_quote = False
+        escape = False
+
+        for char in operation:
+            if escape:
+                escape = False
+                continue
+
+            if char == "\\":
+                escape = True
+                continue
+
+            if char == "'" and not in_double_quote:
+                in_single_quote = not in_single_quote
+                continue
+
+            if char == '"' and not in_single_quote:
+                in_double_quote = not in_double_quote
+                continue
+
+            if not in_single_quote and not in_double_quote:
+                result.append(char)
+
+        return ''.join(result)
+
     def _get_named_params(self, operation):
         '''
         This function returns a list of named parameters in the operation
         string. It does not perform substitution, it just returns the names.
         '''
-
+        operation = self._strip_strings(operation)
         named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
         named_matches = named_re.findall(operation)
         return [match[1:] for match in named_matches]
@@ -103,7 +135,7 @@ class Cursor(object):
         This function returns a list of qmark parameters in the operation
         string. It does not perform substitution, it just returns the names.
         '''
-
+        operation = self._strip_strings(operation)
         qmark_re = re.compile(r"(\?)")
         qmark_matches = qmark_re.findall(operation)
         return [match for match in qmark_matches]
