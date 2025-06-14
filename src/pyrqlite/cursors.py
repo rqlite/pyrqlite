@@ -88,10 +88,11 @@ class Cursor(object):
                     indent=4))
         return response_json
 
-    def _substitute_params(self, operation, parameters):
+    def _check_params_count(self, operation, parameters):
         '''
-        SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and
-        NULL
+        This function doesn't perform substitution, it just checks
+        the number of parameters in the operation against the
+        number of parameters given
         '''
 
         param_matches = 0
@@ -110,7 +111,7 @@ class Cursor(object):
 
         # No regex matches and no parameters.
         if parameters is None:
-            return operation
+            return
 
         if len(qmark_matches) > 0 and len(named_matches) > 0:
             raise ProgrammingError('different parameter types in operation not'
@@ -124,10 +125,7 @@ class Cursor(object):
                                        'a dictionary (which has only names): '
                                        '%s %s' % (operation, parameters))
             for op_key in named_matches:
-                try:
-                    operation = operation.replace(op_key, 
-                                                 _adapt_from_python(parameters[op_key[1:]]))
-                except KeyError:
+                if not op_key[1:] in parameters:
                     raise ProgrammingError('the named parameters given do not '
                                            'match operation: %s %s' %
                                            (operation, parameters))
@@ -141,15 +139,8 @@ class Cursor(object):
                 raise ProgrammingError('Named binding used, but you supplied a'
                                        ' sequence (which has no names): %s %s' %
                                        (operation, parameters))
-            parts = operation.split('?')
-            subst = []
-            for i, part in enumerate(parts):
-                subst.append(part)
-                if i < len(parameters):
-                    subst.append(_adapt_from_python(parameters[i]))
-            operation = ''.join(subst)
 
-        return operation
+        return
 
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
@@ -159,14 +150,23 @@ class Cursor(object):
             raise ValueError(
                              "argument must be a string, not '{}'".format(type(operation).__name__))
 
-        operation = self._substitute_params(operation, parameters)
+        # prepare operation with parameters
+        self._check_params_count(operation, parameters)
+        operation = [operation]
+        if parameters is not None:
+            if isinstance(parameters, dict):
+                operation.append(parameters)
+            else:
+                operation.extend(parameters)
 
-        command = self._get_sql_command(operation)
+        command = self._get_sql_command(operation[0])
         if command in ('SELECT', 'PRAGMA'):
-            params = {'q': operation}
+            params = {}
             if consistency:
                 params["level"] = consistency
-            payload = self._request("GET", "/db/query?" + _urlencode(params))
+            payload = self._request("POST", "/db/query?" + _urlencode(params), 
+                                    headers={'Content-Type': 'application/json'},
+                                    body=json.dumps([operation]))
         else:
             path = "/db/execute?transaction"
             if queue:
@@ -174,7 +174,8 @@ class Cursor(object):
             if wait:
                 path = path +"&wait"
             payload = self._request("POST", path,
-                                    headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
+                                    headers={'Content-Type': 'application/json'},
+                                    body=json.dumps([operation]))
 
         last_insert_id = None
         rows_affected = -1
@@ -258,7 +259,15 @@ class Cursor(object):
 
         statements = []
         for parameters in seq_of_parameters:
-            statements.append(self._substitute_params(operation, parameters))
+            # prepare operation with parameters
+            self._check_params_count(operation, parameters)
+            new_operation = [operation]
+            if parameters is not None:
+                if isinstance(parameters, dict):
+                    new_operation.append(parameters)
+                else:
+                    new_operation.extend(parameters)
+            statements.append(new_operation)
 
         path = "/db/execute?transaction"
         if queue:
