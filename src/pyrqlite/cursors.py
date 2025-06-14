@@ -14,7 +14,7 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-from .exceptions import Error, ProgrammingError
+from .exceptions import Error, ProgrammingError, InterfaceError
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
@@ -163,6 +163,11 @@ class Cursor(object):
                                       for value in parameters]
                 operation.extend(adapted_parameters)
 
+        try:
+            json_body = json.dumps([operation])
+        except TypeError as e:
+            raise InterfaceError(e)
+
         command = self._get_sql_command(operation[0])
         if command in ('SELECT', 'PRAGMA'):
             params = {}
@@ -170,7 +175,7 @@ class Cursor(object):
                 params["level"] = consistency
             payload = self._request("POST", "/db/query?" + _urlencode(params), 
                                     headers={'Content-Type': 'application/json'},
-                                    body=json.dumps([operation]))
+                                    body=json_body)
         else:
             path = "/db/execute?transaction"
             if queue:
@@ -179,7 +184,7 @@ class Cursor(object):
                 path = path +"&wait"
             payload = self._request("POST", path,
                                     headers={'Content-Type': 'application/json'},
-                                    body=json.dumps([operation]))
+                                    body=json_body)
 
         last_insert_id = None
         rows_affected = -1
@@ -277,6 +282,11 @@ class Cursor(object):
                     new_operation.extend(adapted_parameters)
             statements.append(new_operation)
 
+        try:
+            json_body = json.dumps(statements)
+        except TypeError as e:
+            raise InterfaceError(e)
+
         path = "/db/execute?transaction"
         if queue:
             path = path + "&queue"
@@ -284,7 +294,7 @@ class Cursor(object):
             path = path +"&wait"
         payload = self._request("POST", path,
                                 headers={'Content-Type': 'application/json'},
-                                body=json.dumps(statements))
+                                body=json_body)
         rows_affected = -1
         try:
             results = payload["results"]
