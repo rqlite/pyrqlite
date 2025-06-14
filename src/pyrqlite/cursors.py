@@ -155,9 +155,13 @@ class Cursor(object):
         operation = [operation]
         if parameters is not None:
             if isinstance(parameters, dict):
-                operation.append(parameters)
+                adapted_parameters = {key: _adapt_from_python(value)
+                                      for key, value in parameters.items()}
+                operation.append(adapted_parameters)
             else:
-                operation.extend(parameters)
+                adapted_parameters = [_adapt_from_python(value)
+                                      for value in parameters]
+                operation.extend(adapted_parameters)
 
         command = self._get_sql_command(operation[0])
         if command in ('SELECT', 'PRAGMA'):
@@ -264,9 +268,13 @@ class Cursor(object):
             new_operation = [operation]
             if parameters is not None:
                 if isinstance(parameters, dict):
-                    new_operation.append(parameters)
+                    adapted_parameters = {key: _adapt_from_python(value)
+                                        for key, value in parameters.items()}
+                    new_operation.append(adapted_parameters)
                 else:
-                    new_operation.extend(parameters)
+                    adapted_parameters = [_adapt_from_python(value)
+                                        for value in parameters]
+                    new_operation.extend(adapted_parameters)
             statements.append(new_operation)
 
         path = "/db/execute?transaction"

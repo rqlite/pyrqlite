@@ -427,7 +427,7 @@ class ObjectAdaptationTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        del sqlite.adapters[(int, sqlite.PrepareProtocol)]
+        del sqlite.adapters[int]
         cls.cur.close()
         cls.con.close()
 
