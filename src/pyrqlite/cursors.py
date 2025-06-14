@@ -88,6 +88,49 @@ class Cursor(object):
                     indent=4))
         return response_json
 
+    def _get_named_params(self, operation):
+        '''
+        This function returns a list of named parameters in the operation
+        string. It does not perform substitution, it just returns the names.
+        '''
+
+        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
+        named_matches = named_re.findall(operation)
+        return [match[1:] for match in named_matches]
+
+    def _get_qmark_params(self, operation):
+        '''
+        This function returns a list of qmark parameters in the operation
+        string. It does not perform substitution, it just returns the names.
+        '''
+
+        qmark_re = re.compile(r"(\?)")
+        qmark_matches = qmark_re.findall(operation)
+        return [match for match in qmark_matches]
+
+    def _resolve_named_params(self, parameters, named_params):
+        '''
+        This function resolves all the named parameters extracted from the operation
+        string against the parameters object given
+        '''
+
+        if not isinstance(parameters, dict):
+            raise ProgrammingError('named parameters used, but you supplied '
+                                   'a sequence (which has no names): %s %s' %
+                                   (operation, parameters))
+
+        resolved_params = {}
+
+        for param in named_params:
+            try:
+                resolved_params[param] = parameters[param]
+            except KeyError:
+                raise ProgrammingError('the named parameters given do not '
+                                       'match operation: %s %s' %
+                                       (operation, parameters))
+        
+        return resolved_params
+
     def _check_params_count(self, operation, parameters):
         '''
         This function doesn't perform substitution, it just checks
@@ -97,11 +140,8 @@ class Cursor(object):
 
         param_matches = 0
 
-        qmark_re = re.compile(r"(\?)")
-        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
-
-        qmark_matches = qmark_re.findall(operation)
-        named_matches = named_re.findall(operation)
+        qmark_matches = self._get_qmark_params(operation)
+        named_matches = self._get_named_params(operation)
         param_matches = len(qmark_matches) + len(named_matches)
 
         # Matches but no parameters
@@ -126,7 +166,7 @@ class Cursor(object):
                                        '%s %s' % (operation, parameters))
             for op_key in named_matches:
                 try:
-                    parameters[op_key[1:]]
+                    parameters[op_key]
                 except KeyError:
                     raise ProgrammingError('the named parameters given do not '
                                            'match operation: %s %s' %
@@ -157,8 +197,11 @@ class Cursor(object):
         operation = [operation]
         if parameters is not None:
             if isinstance(parameters, dict):
+                resolved_params = self._resolve_named_params(
+                    parameters, self._get_named_params(operation[0]))
+                
                 adapted_parameters = {key: _adapt_from_python(value)
-                                      for key, value in parameters.items()}
+                                      for key, value in resolved_params.items()}
                 operation.append(adapted_parameters)
             else:
                 adapted_parameters = [_adapt_from_python(value)
@@ -275,8 +318,11 @@ class Cursor(object):
             new_operation = [operation]
             if parameters is not None:
                 if isinstance(parameters, dict):
+                    resolved_params = self._resolve_named_params(
+                        parameters, self._get_named_params(operation[0]))
+                    
                     adapted_parameters = {key: _adapt_from_python(value)
-                                        for key, value in parameters.items()}
+                                        for key, value in resolved_params.items()}
                     new_operation.append(adapted_parameters)
                 else:
                     adapted_parameters = [_adapt_from_python(value)
