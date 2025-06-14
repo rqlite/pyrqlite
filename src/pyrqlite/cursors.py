@@ -125,7 +125,9 @@ class Cursor(object):
                                        'a dictionary (which has only names): '
                                        '%s %s' % (operation, parameters))
             for op_key in named_matches:
-                if not op_key[1:] in parameters:
+                try:
+                    parameters[op_key[1:]]
+                except KeyError:
                     raise ProgrammingError('the named parameters given do not '
                                            'match operation: %s %s' %
                                            (operation, parameters))
