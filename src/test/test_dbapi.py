@@ -289,7 +289,6 @@ class CursorTests(unittest.TestCase):
                 return 1
 
             def __getitem__(self, x):
-                assert x == 0
                 if x >= self.__len__():
                     raise IndexError("Index out of range")
                 return "foo"
