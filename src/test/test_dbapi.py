@@ -288,9 +288,16 @@ class CursorTests(unittest.TestCase):
         class L(object):
             def __len__(self):
                 return 1
+
             def __getitem__(self, x):
                 assert x == 0
+                if x >= self.__len__():
+                    raise IndexError("Index out of range")
                 return "foo"
+
+            def __iter__(self):
+                for i in range(self.__len__()):
+                    yield self[i]
 
         self.cu.execute("insert into test(name) values ('foo')")
         self.cu.execute("select name from test where name=?", L())
