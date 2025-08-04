@@ -201,8 +201,9 @@ class Cursor(object):
                                        '%s %s' % (operation, parameters))
             for op_key in named_matches:
                 try:
-                    # Access the key to trigger defaultdict creation if needed
-                    # otherwise check for KeyError for normal dict
+                    # if parameters is a defaultdict, we need to access op_key
+                    # to trigger defaultdict creation if needed.
+                    # otherwise when its a normal dict, check for KeyError
                     _ = parameters[op_key]
                 except KeyError:
                     raise ProgrammingError('the named parameters given do not '
