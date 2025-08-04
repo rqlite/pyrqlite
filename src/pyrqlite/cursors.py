@@ -292,7 +292,8 @@ class Cursor(object):
             for item in results:
                 if 'error' in item:
                     logging.getLogger(__name__).error(json.dumps(item))
-                    raise ProgrammingError(json.dumps(item))
+                    # error will be a string with description of the error
+                    raise ProgrammingError(item['error'])
                 try:
                     rows_affected += item['rows_affected']
                 except KeyError:
@@ -385,7 +386,7 @@ class Cursor(object):
             for item in results:
                 if 'error' in item:
                     logging.getLogger(__name__).error(json.dumps(item))
-                    raise ProgrammingError(json.dumps(item))
+                    raise ProgrammingError(item['error'])
                 try:
                     rows_affected += item['rows_affected']
                 except KeyError:
