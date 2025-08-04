@@ -143,7 +143,7 @@ class Cursor(object):
         qmark_matches = qmark_re.findall(operation)
         return [match for match in qmark_matches]
 
-    def _resolve_named_params(self, operation, parameters, named_params):
+    def _resolve_named_params(self, operation, parameters):
         '''
         This function resolves all the named parameters extracted from the operation
         string against the parameters object given
@@ -154,6 +154,7 @@ class Cursor(object):
                                    'a sequence (which has no names): %s %s' %
                                    (operation, parameters))
 
+        named_params = self._get_named_params(operation)
         resolved_params = {}
 
         for param in named_params:
@@ -240,8 +241,7 @@ class Cursor(object):
             if isinstance(parameters, dict):
                 # we need to use the key names matched from the operation to resolve against
                 # the dict like object given in parameters
-                resolved_params = self._resolve_named_params(operation,
-                    parameters, self._get_named_params(operation))
+                resolved_params = self._resolve_named_params(operation, parameters)
                 adapted_parameters = {key: _adapt_from_python(value)
                                         for key, value in resolved_params.items()}
                 op_payload.append(adapted_parameters)
