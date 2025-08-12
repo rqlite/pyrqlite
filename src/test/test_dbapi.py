@@ -353,6 +353,14 @@ class CursorTests(unittest.TestCase):
         except sqlite.ProgrammingError:
             pass
 
+    def test_CheckExecuteWithQmarkInString(self):
+        # check qmark in a string is not interpreted as a parameter placeholder
+        self.cu.execute("create table testq(id integer primary key, name text default 'bar?')")
+
+    def test_CheckExecuteWithColonInString(self):
+        # check colon in a string is not interpreted as a named parameter placeholder
+        self.cu.execute("create table testc(id integer primary key, name text default 'foo:bar:')")
+
     def test_CheckClose(self):
         self.cu.close()
         self.cu = self.cx.cursor()
