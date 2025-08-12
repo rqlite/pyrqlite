@@ -289,7 +289,7 @@ class CursorTests(unittest.TestCase):
                 return 1
 
             def __getitem__(self, x):
-                assert x == 0 
+                assert x == 0
                 return "foo"
 
             def __iter__(self):
