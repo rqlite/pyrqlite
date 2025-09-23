@@ -84,6 +84,12 @@ class Connection(object):
             self.host, self.port = self._ephemeral.http
         self._connection = self._init_connection()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @property
     def connect_timeout(self):
         warnings.warn(
