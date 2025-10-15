@@ -233,7 +233,6 @@ class CursorTests(unittest.TestCase):
     def test_CheckExecuteArgString(self):
         self.cu.execute("insert into test(name) values (?)", ("Hugo",))
 
-    @unittest.expectedFailure
     def test_CheckExecuteArgStringWithZeroByte(self):
         self.cu.execute("insert into test(name) values (?)", ("Hu\x00go",))
 
@@ -288,9 +287,14 @@ class CursorTests(unittest.TestCase):
         class L(object):
             def __len__(self):
                 return 1
+
             def __getitem__(self, x):
                 assert x == 0
                 return "foo"
+
+            def __iter__(self):
+                for i in range(self.__len__()):
+                    yield self[i]
 
         self.cu.execute("insert into test(name) values ('foo')")
         self.cu.execute("select name from test where name=?", L())
@@ -348,6 +352,14 @@ class CursorTests(unittest.TestCase):
             self.fail("should have raised ProgrammingError")
         except sqlite.ProgrammingError:
             pass
+
+    def test_CheckExecuteWithQmarkInString(self):
+        # check qmark in a string is not interpreted as a parameter placeholder
+        self.cu.execute("create table testq(id integer primary key, name text default 'bar?')")
+
+    def test_CheckExecuteWithColonInString(self):
+        # check colon in a string is not interpreted as a named parameter placeholder
+        self.cu.execute("create table testc(id integer primary key, name text default 'foo:bar:')")
 
     def test_CheckClose(self):
         self.cu.close()
