@@ -8,7 +8,7 @@ jobs:
     steps:
       - checkout
       - run: cat /etc/lsb-release
-      - run: pip install pytest pytest-cov setuptools
+      - run: pip install pytest pytest-cov
       - run: |
               curl -L https://github.com/rqlite/rqlite/releases/download/v${RQLITE_VERSION}/rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz -o rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz
               tar xvfz rqlite-v${RQLITE_VERSION}-linux-amd64.tar.gz
@@ -18,4 +18,4 @@ jobs:
           environment:
                   RQLITED_PATH: /home/circleci/project/rqlited
                   PYTHONPATH: src
-          command: python setup.py test
+          command: pytest -v -s --cov=src --cov-report=term-missing src/test

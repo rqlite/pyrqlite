@@ -23,8 +23,11 @@ file = "LICENSE"
 "Bug Tracker" = "https://github.com/rqlite/pyrqlite/issues"
 
 [build-system]
-requires = [
-	"setuptools",
-	"wheel",
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.build]
+package-dir = "src"
+excludes = [
+	"src/test",
 ]
-build-backend = "setuptools.build_meta"
