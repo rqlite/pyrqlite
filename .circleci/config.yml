@@ -4,7 +4,7 @@ jobs:
     machine:
       image: ubuntu-2204:2024.05.1
     environment:
-      RQLITE_VERSION: 9.1.2
+      RQLITE_VERSION: 9.3.10
     steps:
       - checkout
       - run: cat /etc/lsb-release
