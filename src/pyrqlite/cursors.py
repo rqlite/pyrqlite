@@ -88,69 +88,6 @@ class Cursor(object):
                     indent=4))
         return response_json
 
-    def _substitute_params(self, operation, parameters):
-        '''
-        SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and
-        NULL
-        '''
-
-        param_matches = 0
-
-        qmark_re = re.compile(r"(\?)")
-        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
-
-        qmark_matches = qmark_re.findall(operation)
-        named_matches = named_re.findall(operation)
-        param_matches = len(qmark_matches) + len(named_matches)
-
-        # Matches but no parameters
-        if param_matches > 0 and parameters is None:
-            raise ProgrammingError('parameter required but not given: %s' %
-                                   operation)
-
-        # No regex matches and no parameters.
-        if parameters is None:
-            return operation
-
-        if len(qmark_matches) > 0 and len(named_matches) > 0:
-            raise ProgrammingError('different parameter types in operation not'
-                                   'permitted: %s %s' % 
-                                   (operation, parameters))
-
-        if isinstance(parameters, dict):
-            # parameters is a dict or a dict subclass
-            if len(qmark_matches) > 0:
-                raise ProgrammingError('Unamed binding used, but you supplied '
-                                       'a dictionary (which has only names): '
-                                       '%s %s' % (operation, parameters))
-            for op_key in named_matches:
-                try:
-                    operation = operation.replace(op_key, 
-                                                 _adapt_from_python(parameters[op_key[1:]]))
-                except KeyError:
-                    raise ProgrammingError('the named parameters given do not '
-                                           'match operation: %s %s' %
-                                           (operation, parameters))
-        else:
-            # parameters is a sequence
-            if param_matches != len(parameters):
-                raise ProgrammingError('incorrect number of parameters '
-                                       '(%s != %s): %s %s' % (param_matches, 
-                                       len(parameters), operation, parameters))
-            if len(named_matches) > 0:
-                raise ProgrammingError('Named binding used, but you supplied a'
-                                       ' sequence (which has no names): %s %s' %
-                                       (operation, parameters))
-            parts = operation.split('?')
-            subst = []
-            for i, part in enumerate(parts):
-                subst.append(part)
-                if i < len(parameters):
-                    subst.append(_adapt_from_python(parameters[i]))
-            operation = ''.join(subst)
-
-        return operation
-
     def _get_sql_command(self, sql_str):
         return sql_str.split(None, 1)[0].upper()
 
@@ -159,22 +96,30 @@ class Cursor(object):
             raise ValueError(
                              "argument must be a string, not '{}'".format(type(operation).__name__))
 
-        operation = self._substitute_params(operation, parameters)
-
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
-            params = {'q': operation}
+            path = "/db/query?"
             if consistency:
-                params["level"] = consistency
-            payload = self._request("GET", "/db/query?" + _urlencode(params))
+                path = path + "level=" + consistency
         else:
             path = "/db/execute?transaction"
             if queue:
                 path = path + "&queue"
             if wait:
                 path = path +"&wait"
-            payload = self._request("POST", path,
-                                    headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
+
+        body = [operation]
+        if isinstance(parameters, list):
+            body = body + parameters
+        if isinstance(parameters, dict):
+            body.append(parameters)
+        if isinstance(parameters, tuple):
+            body = body + list(parameters)
+
+        payload = self._request("POST", path,
+                                headers={'Content-Type': 'application/json'},
+                                body=json.dumps([body])
+                            )
 
         last_insert_id = None
         rows_affected = -1
