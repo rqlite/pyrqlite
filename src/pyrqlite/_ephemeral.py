@@ -1,19 +1,12 @@
 
 import contextlib
-import errno
 import os
 import shutil
 import socket
 import subprocess
-import sys
 import tempfile
 import time
-
-try:
-    from http.client import HTTPConnection
-except ImportError:
-    # pylint: disable=import-error
-    from httplib import HTTPConnection
+from http.client import HTTPConnection
 
 
 RQLITED_PATH = os.environ.get("RQLITED_PATH", "rqlited")
@@ -79,17 +72,13 @@ class EphemeralRqlited(object):
             self.http = (self.host, http_port)
             self.raft = (self.host, raft_port)
             with open(os.devnull, mode='wb', buffering=0) as devnull:
-                filename = RQLITED_PATH
                 try:
-                    self._proc = subprocess.Popen([filename,
+                    self._proc = subprocess.Popen([RQLITED_PATH,
                         '-http-addr', '{}:{}'.format(*self.http),
                         '-raft-addr', '{}:{}'.format(*self.raft), self._tempdir],
                         stdout=devnull, stderr=devnull)
-                except EnvironmentError as e:
+                except EnvironmentError:
                     self._remove_tempdir()
-                    if e.errno == errno.ENOENT and sys.version_info.major < 3:
-                        # Add filename to clarify exception message.
-                        e.filename = filename
                     raise
 
             # Poll readiness while the process is alive. Previously the

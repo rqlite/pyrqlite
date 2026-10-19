@@ -12,9 +12,7 @@ This package contains a pure-Python rqlite client library.
 Requirements
 -------------
 
-* Python -- one of the following:
-
-  - CPython_ >= 2.7 or >= 3.3
+* Python -- CPython_ >= 3.3
 
 * rqlite Server
 
@@ -110,3 +108,5 @@ DB-API 2.0: http://www.python.org/dev/peps/pep-0249
 License
 -------------
 pyrqlite is released under the MIT License. See LICENSE for more information.
+
+.. _CPython: https://www.python.org/

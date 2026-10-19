@@ -1,11 +1,5 @@
 
-try:
-    # pylint: disable=no-name-in-module
-    from collections.abc import Mapping
-except ImportError:
-    from collections import Mapping
-
-from collections import OrderedDict
+from collections.abc import Mapping
 
 
 class Row(tuple, Mapping):
@@ -14,7 +8,7 @@ class Row(tuple, Mapping):
         return tuple.__new__(cls, (item[1] for item in items))
 
     def __init__(self, items):
-        super(Row, self).__init__()
+        super().__init__()
         self._items = tuple(items)
         # If the same column name appears more than once then only the
         # value for the first occurence is indexed (see __getitem__).

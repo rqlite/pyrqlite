@@ -1,21 +1,9 @@
 
-from __future__ import unicode_literals
-
 import base64
 import logging
 import warnings
-
-try:
-    from http.client import HTTPConnection, HTTPSConnection
-except ImportError:
-    # pylint: disable=import-error
-    from httplib import HTTPConnection, HTTPSConnection
-
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    # pylint: disable=import-error
-    from urlparse import urlparse
+from http.client import HTTPConnection, HTTPSConnection
+from urllib.parse import urlparse
 
 from .constants import (
     UNLIMITED_REDIRECTS,

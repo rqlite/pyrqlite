@@ -1,18 +1,9 @@
 
-from __future__ import unicode_literals
-
 from collections import OrderedDict
 import json
 import logging
-import sys
 import re
-
-try:
-    # pylint: disable=no-name-in-module
-    from urllib.parse import urlencode
-except ImportError:
-    # pylint: disable=no-name-in-module
-    from urllib import urlencode
+from urllib.parse import urlencode
 
 from .exceptions import (
     DatabaseError,
@@ -25,18 +16,6 @@ from .exceptions import (
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
-
-
-if sys.version_info[0] >= 3:
-    basestring = str
-    _urlencode = urlencode
-else:
-    # avoid UnicodeEncodeError from urlencode
-    def _urlencode(query, doseq=0):
-        return urlencode(dict(
-            (k if isinstance(k, bytes) else k.encode('utf-8'),
-             v if isinstance(v, bytes) else v.encode('utf-8'))
-            for k, v in query.items()), doseq=doseq)
 
 
 # SQLite primary result codes, mapped to DB-API exception classes the
@@ -278,9 +257,9 @@ class Cursor(object):
         self.rowcount = len(rows)
 
     def execute(self, operation, parameters=None, queue=False, wait=False, consistency=None):
-        if not isinstance(operation, basestring):
+        if not isinstance(operation, str):
             raise ValueError(
-                             "argument must be a string, not '{}'".format(type(operation).__name__))
+                "argument must be a string, not '{}'".format(type(operation).__name__))
 
         operation = self._substitute_params(operation, parameters)
 
@@ -292,7 +271,7 @@ class Cursor(object):
             # header limit; a body has no such limit.
             path = "/db/query"
             if consistency:
-                path += "?" + _urlencode({"level": consistency})
+                path += "?" + urlencode({"level": consistency})
             payload = self._request("POST", path,
                                     headers={'Content-Type': 'application/json'},
                                     body=json.dumps([operation]))
@@ -305,7 +284,7 @@ class Cursor(object):
         return self
 
     def executemany(self, operation, seq_of_parameters=None, queue=False, wait=False):
-        if not isinstance(operation, basestring):
+        if not isinstance(operation, str):
             raise ValueError(
                 "argument must be a string, not '{}'".format(type(operation).__name__))
 
