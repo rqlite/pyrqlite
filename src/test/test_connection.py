@@ -5,6 +5,8 @@ socket is opened until a request is made.
 """
 
 import base64
+import gc
+import sys
 import unittest
 
 import pyrqlite.dbapi2 as sqlite
@@ -44,3 +46,38 @@ class BasicAuthHeaderTests(unittest.TestCase):
         header = self._header("usr", "pässwörd")
         encoded = header[len("Basic "):]
         self.assertEqual(base64.b64decode(encoded).decode("utf-8"), "usr:pässwörd")
+
+
+class PartiallyConstructedConnectionTests(unittest.TestCase):
+    @unittest.skipIf(not hasattr(sys, "unraisablehook"), "needs sys.unraisablehook")
+    def test_failed_init_does_not_raise_in_del(self):
+        # An unsupported scheme raises before _connection is assigned.
+        # __del__ then ran close(), which blew up on the missing
+        # attribute and printed "Exception ignored in __del__".
+        caught = []
+        saved = sys.unraisablehook
+        sys.unraisablehook = lambda unraisable: caught.append(unraisable)
+        try:
+            with self.assertRaises(sqlite.ProgrammingError):
+                sqlite.connect(scheme="ftp", host="localhost", port=1)
+            gc.collect()
+        finally:
+            sys.unraisablehook = saved
+        self.assertEqual(caught, [])
+
+    def test_close_is_idempotent(self):
+        con = sqlite.connect(host="localhost", port=1)
+        con.close()
+        con.close()
+
+
+class HeaderHandlingTests(unittest.TestCase):
+    def test_per_request_headers_do_not_leak(self):
+        # The old mutable default argument never leaked in practice
+        # because it was only read, but the signature now makes that
+        # explicit: None means no extra headers.
+        con = sqlite.connect(host="localhost", port=1, user="u", password="p")
+        try:
+            self.assertEqual(sorted(con._headers), ["Authorization"])
+        finally:
+            con.close()
