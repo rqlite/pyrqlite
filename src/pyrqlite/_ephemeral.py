@@ -61,13 +61,20 @@ class EphemeralRqlited(object):
         except Exception:
             return False
 
+    # How many times to retry launching rqlited when a freshly chosen
+    # port turns out to be taken by the time rqlited binds it.
+    _MAX_ATTEMPTS = 10
+
     def _start(self):
-        self._tempdir = tempfile.mkdtemp()
         self.host = 'localhost'
 
-        # Allocation of unused ports is racy, so retry
-        # until ports have been successfully acquired.
-        while self._proc is None:
+        # Allocation of unused ports is racy, so retry until rqlited
+        # has started and reports ready. Each attempt gets a fresh
+        # data directory: a failed attempt leaves Raft state bound to
+        # the old address, which the next attempt must not reuse.
+        last_exit = None
+        for _ in range(self._MAX_ATTEMPTS):
+            self._tempdir = tempfile.mkdtemp()
             http_port, raft_port = self._unused_ports(self.host, 2)
             self.http = (self.host, http_port)
             self.raft = (self.host, raft_port)
@@ -79,30 +86,43 @@ class EphemeralRqlited(object):
                         '-raft-addr', '{}:{}'.format(*self.raft), self._tempdir],
                         stdout=devnull, stderr=devnull)
                 except EnvironmentError as e:
+                    self._remove_tempdir()
                     if e.errno == errno.ENOENT and sys.version_info.major < 3:
                         # Add filename to clarify exception message.
                         e.filename = filename
                     raise
 
-            while not self._test_port(*self.http) and self._proc.poll() is None:
+            # Poll readiness while the process is alive. Previously the
+            # readiness loop never checked the process, so if rqlited
+            # died before serving /readyz this hung forever.
+            while self._proc.poll() is None:
+                if self._test_readyz(*self.http):
+                    return
                 time.sleep(0.5)
 
-            while not self._test_readyz(*self.http):
-                time.sleep(0.5)
+            last_exit = self._proc.returncode
+            self._proc = None
+            self._remove_tempdir()
 
-            if self._proc.poll() is not None:
-                self._proc = None
+        raise RuntimeError(
+            "rqlited at {!r} failed to start after {} attempts "
+            "(last exit status {})".format(
+                RQLITED_PATH, self._MAX_ATTEMPTS, last_exit))
+
+    def _remove_tempdir(self):
+        if self._tempdir is not None:
+            shutil.rmtree(self._tempdir, ignore_errors=True)
+            self._tempdir = None
 
     def __enter__(self):
         self._start()
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self._tempdir is not None:
-            shutil.rmtree(self._tempdir)
-            self._tempdir = None
+        # Stop the process before removing the directory it writes to.
         if self._proc is not None:
             self._proc.terminate()
             self._proc.wait()
             self._proc = None
+        self._remove_tempdir()
         return False
