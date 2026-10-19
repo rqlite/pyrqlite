@@ -9,6 +9,60 @@ import pyrqlite.dbapi2 as sqlite
 from pyrqlite.cursors import Cursor
 
 
+class NamedParameterTests(unittest.TestCase):
+    """
+    Named placeholders are substituted client-side. The old matcher
+    only accepted letters, so :name1 and :first_name were left in the
+    SQL untouched, and sequential str.replace let :a corrupt :ab.
+    """
+
+    def _sub(self, operation, parameters):
+        return Cursor(None)._substitute_params(operation, parameters)
+
+    def test_plain_name(self):
+        self.assertEqual(
+            self._sub("select * from t where a=:name", {"name": "x"}),
+            "select * from t where a='x'")
+
+    def test_name_with_digits(self):
+        self.assertEqual(
+            self._sub("select * from t where a=:name1", {"name1": 1}),
+            "select * from t where a=1")
+
+    def test_name_with_underscore(self):
+        self.assertEqual(
+            self._sub("select * from t where a=:first_name", {"first_name": "x"}),
+            "select * from t where a='x'")
+
+    def test_prefix_names_do_not_collide(self):
+        self.assertEqual(
+            self._sub("select * from t where a=:a and b=:ab", {"a": 1, "ab": 2}),
+            "select * from t where a=1 and b=2")
+
+    def test_repeated_name(self):
+        self.assertEqual(
+            self._sub("select :v, :v", {"v": 7}),
+            "select 7, 7")
+
+    def test_missing_name_raises(self):
+        with self.assertRaises(sqlite.ProgrammingError):
+            self._sub("select :a, :b", {"a": 1})
+
+    def test_mapping_with_missing_is_honoured(self):
+        class D(dict):
+            def __missing__(self, key):
+                return "dflt"
+        self.assertEqual(self._sub("select :zzz", D()), "select 'dflt'")
+
+    def test_qmark_count_mismatch_raises(self):
+        with self.assertRaises(sqlite.ProgrammingError):
+            self._sub("select ?, ?", (1,))
+
+    def test_mixed_styles_raise(self):
+        with self.assertRaises(sqlite.ProgrammingError):
+            self._sub("select ?, :a", {"a": 1})
+
+
 class FetchAfterDMLTests(unittest.TestCase):
     """
     After UPDATE or DELETE, rowcount holds the number of rows affected

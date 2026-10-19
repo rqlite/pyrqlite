@@ -32,6 +32,12 @@ else:
             for k, v in query.items()), doseq=doseq)
 
 
+# A named placeholder is a colon followed by an identifier: a letter or
+# underscore, then letters, digits or underscores.
+_NAMED_RE = re.compile(r':([a-zA-Z_][a-zA-Z0-9_]*)')
+_QMARK_RE = re.compile(r'\?')
+
+
 class Cursor(object):
     arraysize = 1
 
@@ -93,14 +99,8 @@ class Cursor(object):
         SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and
         NULL
         '''
-
-        param_matches = 0
-
-        qmark_re = re.compile(r"(\?)")
-        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
-
-        qmark_matches = qmark_re.findall(operation)
-        named_matches = named_re.findall(operation)
+        qmark_matches = _QMARK_RE.findall(operation)
+        named_matches = _NAMED_RE.findall(operation)
         param_matches = len(qmark_matches) + len(named_matches)
 
         # Matches but no parameters
@@ -113,24 +113,29 @@ class Cursor(object):
             return operation
 
         if len(qmark_matches) > 0 and len(named_matches) > 0:
-            raise ProgrammingError('different parameter types in operation not'
-                                   'permitted: %s %s' % 
+            raise ProgrammingError('different parameter types in operation not '
+                                   'permitted: %s %s' %
                                    (operation, parameters))
 
         if isinstance(parameters, dict):
             # parameters is a dict or a dict subclass
             if len(qmark_matches) > 0:
-                raise ProgrammingError('Unamed binding used, but you supplied '
+                raise ProgrammingError('Unnamed binding used, but you supplied '
                                        'a dictionary (which has only names): '
                                        '%s %s' % (operation, parameters))
-            for op_key in named_matches:
+
+            def replace(match):
                 try:
-                    operation = operation.replace(op_key, 
-                                                 _adapt_from_python(parameters[op_key[1:]]))
+                    value = parameters[match.group(1)]
                 except KeyError:
                     raise ProgrammingError('the named parameters given do not '
                                            'match operation: %s %s' %
                                            (operation, parameters))
+                return _adapt_from_python(value)
+
+            # A single regex pass substitutes each placeholder exactly
+            # once, so :a cannot clobber the start of :ab.
+            operation = _NAMED_RE.sub(replace, operation)
         else:
             # parameters is a sequence
             if param_matches != len(parameters):
