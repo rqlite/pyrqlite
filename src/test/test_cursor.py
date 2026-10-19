@@ -126,3 +126,74 @@ class FetchAfterDMLEndToEndTests(unittest.TestCase):
         self.assertEqual(self.cu.rowcount, 3)
         self.assertEqual(self.cu.fetchmany(10), [])
         self.assertEqual(list(self.cu), [])
+
+
+class StatementErrorTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cx = sqlite.connect(":memory:")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cx.close()
+
+    def setUp(self):
+        self.cu = self.cx.cursor()
+        self.cu.execute("create table test(x integer primary key)")
+
+    def tearDown(self):
+        self.cu.execute("drop table test")
+        self.cu.close()
+
+    def test_execute_raises_on_statement_error(self):
+        with self.assertRaises(sqlite.Error):
+            self.cu.execute("insert into nosuchtable values (1)")
+
+    def test_executemany_raises_on_statement_error(self):
+        # executemany used to log the error and report success.
+        with self.assertRaises(sqlite.Error):
+            self.cu.executemany("insert into nosuchtable values (?)", [(1,), (2,)])
+
+    def test_empty_statement_is_a_noop(self):
+        # The command sniffer used to raise IndexError on an empty
+        # string before anything was sent. sqlite3 treats an empty
+        # statement as a successful no-op, and so does rqlite.
+        for stmt in ("", "   "):
+            self.cu.execute(stmt)
+            self.assertIsNone(self.cu.description)
+            self.assertEqual(self.cu.fetchall(), [])
+
+
+class RowcountTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cx = sqlite.connect(":memory:")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cx.close()
+
+    def setUp(self):
+        self.cu = self.cx.cursor()
+        self.cu.execute("create table test(x integer)")
+
+    def tearDown(self):
+        self.cu.execute("drop table test")
+        self.cu.close()
+
+    def test_insert_reports_rows_affected(self):
+        self.cu.execute("insert into test(x) values (1)")
+        self.assertEqual(self.cu.rowcount, 1)
+        self.cu.executemany("insert into test(x) values (?)", [(2,), (3,)])
+        self.assertEqual(self.cu.rowcount, 2)
+
+    def test_select_reports_rows_returned(self):
+        self.cu.executemany("insert into test(x) values (?)", [(1,), (2,), (3,)])
+        self.cu.execute("select x from test where x > 1")
+        self.assertEqual(self.cu.rowcount, 2)
+        self.assertEqual(len(self.cu.fetchall()), 2)
+
+    def test_ddl_reports_zero(self):
+        self.cu.execute("create table other(y)")
+        self.assertEqual(self.cu.rowcount, 0)
+        self.cu.execute("drop table other")

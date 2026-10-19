@@ -157,7 +157,71 @@ class Cursor(object):
         return operation
 
     def _get_sql_command(self, sql_str):
-        return sql_str.split(None, 1)[0].upper()
+        parts = sql_str.split(None, 1)
+        return parts[0].upper() if parts else ''
+
+    @staticmethod
+    def _execute_path(queue, wait):
+        path = "/db/execute?transaction"
+        if queue:
+            path += "&queue"
+        if wait:
+            path += "&wait"
+        return path
+
+    def _handle_results(self, payload, command):
+        """
+        Populate the cursor from the JSON payload of a /db/query or
+        /db/execute response. Raises on the first statement error.
+        """
+        last_insert_id = None
+        rows_affected = -1
+        payload_rows = {}
+        results = payload.get("results")
+        if results is not None:
+            rows_affected = 0
+            for item in results:
+                if 'error' in item:
+                    logging.getLogger(__name__).error(json.dumps(item))
+                    raise Error(json.dumps(item))
+                rows_affected += item.get('rows_affected', 0)
+                if 'last_insert_id' in item:
+                    last_insert_id = item['last_insert_id']
+                if 'columns' in item:
+                    payload_rows = item
+
+        self.rownumber = 0
+        if 'columns' not in payload_rows:
+            # Not a result set: DDL or DML.
+            self.description = None
+            self._rows = []
+            if command == 'INSERT':
+                self.lastrowid = last_insert_id
+            self.rowcount = rows_affected
+            return
+
+        fields = payload_rows['columns']
+        self.description = tuple(
+            (_column_stripper(field, parse_colnames=self.connection.parse_colnames),
+             None, None, None, None, None, None)
+            for field in fields)
+
+        rows = []
+        values = payload_rows.get('values')
+        types = payload_rows.get('types')
+        if values and types is not None:
+            converters = [_convert_to_python(field, type_,
+                          parse_decltypes=self.connection.parse_decltypes,
+                          parse_colnames=self.connection.parse_colnames)
+                          for field, type_ in zip(fields, types)]
+            for payload_row in values:
+                row = []
+                for field, converter, value in zip(fields, converters, payload_row):
+                    row.append((field, (value if converter is None
+                                        else converter(value))))
+                rows.append(Row(row))
+        self._rows = rows
+        self.rowcount = len(rows)
 
     def execute(self, operation, parameters=None, queue=False, wait=False, consistency=None):
         if not isinstance(operation, basestring):
@@ -173,87 +237,11 @@ class Cursor(object):
                 params["level"] = consistency
             payload = self._request("GET", "/db/query?" + _urlencode(params))
         else:
-            path = "/db/execute?transaction"
-            if queue:
-                path = path + "&queue"
-            if wait:
-                path = path +"&wait"
-            payload = self._request("POST", path,
-                                    headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
+            payload = self._request("POST", self._execute_path(queue, wait),
+                                    headers={'Content-Type': 'application/json'},
+                                    body=json.dumps([operation]))
 
-        last_insert_id = None
-        rows_affected = -1
-        payload_rows = {}
-        try:
-            results = payload["results"]
-        except KeyError:
-            pass
-        else:
-            rows_affected = 0
-            for item in results:
-                if 'error' in item:
-                    logging.getLogger(__name__).error(json.dumps(item))
-                    raise Error(json.dumps(item))
-                try:
-                    rows_affected += item['rows_affected']
-                except KeyError:
-                    pass
-                try:
-                    last_insert_id = item['last_insert_id']
-                except KeyError:
-                    pass
-                if 'columns' in item:
-                    payload_rows = item
-
-        try:
-            fields = payload_rows['columns']
-        except KeyError:
-            self.description = None
-            self._rows = []
-            if command == 'INSERT':
-                self.lastrowid = last_insert_id
-        else:
-            rows = []
-            description = []
-            for field in fields:
-                description.append((
-                    _column_stripper(field, parse_colnames=self.connection.parse_colnames),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ))
-
-            try:
-                values = payload_rows['values']
-                types = payload_rows['types']
-            except KeyError:
-                pass
-            else:
-                if values:
-                    converters = [_convert_to_python(field, type_,
-                                  parse_decltypes=self.connection.parse_decltypes,
-                                  parse_colnames=self.connection.parse_colnames)
-                                  for field, type_ in zip(fields, types)]
-                    for payload_row in values:
-                        row = []
-                        for field, converter, value in zip(fields, converters, payload_row):
-                            row.append((field, (value if converter is None
-                                                else converter(value))))
-                        rows.append(Row(row))
-            self._rows = rows
-            self.description = tuple(description)
-
-        self.rownumber = 0
-        if command in ('UPDATE', 'DELETE'):
-            # sqalchemy's _emit_update_statements function asserts
-            # rowcount for each update, and _emit_delete_statements
-            # warns unless rowcount matches
-            self.rowcount = rows_affected
-        else:
-            self.rowcount = len(self._rows)
+        self._handle_results(payload, command)
         return self
 
     def executemany(self, operation, seq_of_parameters=None, queue=False, wait=False):
@@ -265,31 +253,10 @@ class Cursor(object):
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
 
-        path = "/db/execute?transaction"
-        if queue:
-            path = path + "&queue"
-        if wait:
-            path = path +"&wait"
-        payload = self._request("POST", path,
+        payload = self._request("POST", self._execute_path(queue, wait),
                                 headers={'Content-Type': 'application/json'},
                                 body=json.dumps(statements))
-        rows_affected = -1
-        try:
-            results = payload["results"]
-        except KeyError:
-            pass
-        else:
-            rows_affected = 0
-            for item in results:
-                if 'error' in item:
-                    logging.getLogger(__name__).error(json.dumps(item))
-                try:
-                    rows_affected += item['rows_affected']
-                except KeyError:
-                    pass
-        self._rows = []
-        self.rownumber = 0
-        self.rowcount = rows_affected
+        self._handle_results(payload, self._get_sql_command(operation))
 
     def _remaining(self):
         """
