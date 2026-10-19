@@ -106,6 +106,7 @@ Transactions are not supported.
 
 Resources
 -------------
+rqlite: https://rqlite.io/
 DB-API 2.0: http://www.python.org/dev/peps/pep-0249
 
 
