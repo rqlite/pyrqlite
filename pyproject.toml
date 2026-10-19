@@ -6,7 +6,7 @@ authors = [
   { name="Philip O'Toole", email="philip.otoole@yahoo.com" },
 ]
 description = "Python rqlite client library"
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.3"
 classifiers = [
     "Programming Language :: Python :: 3",
