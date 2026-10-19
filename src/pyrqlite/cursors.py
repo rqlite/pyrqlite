@@ -286,9 +286,19 @@ class Cursor(object):
         self.rownumber = 0
         self.rowcount = rows_affected
 
+    def _remaining(self):
+        """
+        Number of rows not yet fetched. This is based on the rows
+        actually held, not on rowcount, which for UPDATE and DELETE
+        reports rows affected rather than rows returned.
+        """
+        if self._rows is None:
+            return 0
+        return max(len(self._rows) - self.rownumber, 0)
+
     def fetchone(self):
         ''' Fetch the next row '''
-        if self._rows is None or self.rownumber >= len(self._rows):
+        if not self._remaining():
             return None
         result = self._rows[self.rownumber]
         self.rownumber += 1
@@ -296,14 +306,11 @@ class Cursor(object):
 
     def fetchmany(self, size=None):
         remaining = self.arraysize if size is None else size
-        remaining = min(remaining, self.rowcount - self.rownumber)
+        remaining = min(remaining, self._remaining())
         return [self.fetchone() for i in range(remaining)]
 
     def fetchall(self):
-        rows = []
-        while self.rownumber < self.rowcount:
-            rows.append(self.fetchone())
-        return rows
+        return [self.fetchone() for i in range(self._remaining())]
 
     def setinputsizes(self, sizes):
         raise NotImplementedError(self)
@@ -318,5 +325,5 @@ class Cursor(object):
         raise NotImplementedError(self)
 
     def __iter__(self):
-        while self.rownumber < self.rowcount:
+        while self._remaining():
             yield self.fetchone()
