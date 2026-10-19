@@ -1,7 +1,7 @@
 
 from __future__ import unicode_literals
 
-import codecs
+import base64
 import logging
 import warnings
 
@@ -62,9 +62,9 @@ class Connection(object):
         self.ssl_context = ssl_context
         self._headers = {}
         if not (user is None or password is None):
-            self._headers['Authorization'] = 'Basic ' + \
-                codecs.encode('{}:{}'.format(user, password).encode('utf-8'),
-                              'base64').decode('utf-8').rstrip('\n')
+            credentials = '{}:{}'.format(user, password).encode('utf-8')
+            self._headers['Authorization'] = \
+                'Basic ' + base64.b64encode(credentials).decode('ascii')
 
         if connect_timeout is not DeprecationWarning:
             warnings.warn(
