@@ -286,10 +286,16 @@ class Cursor(object):
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
-            params = {'q': operation}
+            # POST the statement in the body rather than in the URL.
+            # Parameters are inlined client-side, so a large text
+            # parameter can push a GET past the server's request
+            # header limit; a body has no such limit.
+            path = "/db/query"
             if consistency:
-                params["level"] = consistency
-            payload = self._request("GET", "/db/query?" + _urlencode(params))
+                path += "?" + _urlencode({"level": consistency})
+            payload = self._request("POST", path,
+                                    headers={'Content-Type': 'application/json'},
+                                    body=json.dumps([operation]))
         else:
             payload = self._request("POST", self._execute_path(queue, wait),
                                     headers={'Content-Type': 'application/json'},

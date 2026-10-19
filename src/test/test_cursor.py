@@ -275,3 +275,28 @@ class ExceptionMappingEndToEndTests(unittest.TestCase):
                              headers={'Content-Type': 'application/json'})
         self.assertIn("400", str(cm.exception))
         self.assertIn("invalid request", str(cm.exception))
+
+
+class LargeQueryTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cx = sqlite.connect(":memory:")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cx.close()
+
+    def test_large_text_parameter_in_select(self):
+        # Queries used to be sent as GET with the statement in the
+        # URL, which the server rejects with 431 once it exceeds its
+        # header limit (1 MB by default in Go's HTTP server).
+        big = "x" * 1500000
+        cu = self.cx.cursor()
+        cu.execute("select length(?)", (big,))
+        self.assertEqual(cu.fetchone()[0], len(big))
+
+    def test_consistency_still_applied_with_post(self):
+        cu = self.cx.cursor()
+        for level in ("none", "weak", "linearizable", "strong"):
+            cu.execute("select 1", consistency=level)
+            self.assertEqual(cu.fetchone()[0], 1)
