@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 """
 SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and NULL.
 And RQLite always answers 'bytes' values.
@@ -13,13 +11,8 @@ import datetime
 import functools
 import re
 import sqlite3
-import sys
 
 from .exceptions import InterfaceError
-
-if sys.version_info[0] >= 3:
-    basestring = str
-    unicode = str
 
 PARSE_DECLTYPES = 1
 PARSE_COLNAMES = 2
@@ -32,32 +25,17 @@ def _decoder(conv_func):
     """
     return lambda s: conv_func(s.decode('utf-8'))
 
-if sys.version_info[0] >= 3:
+def _escape_string(value):
+    if isinstance(value, bytes):
+        return "X'{}'".format(
+            codecs.encode(value, 'hex').decode('utf-8'))
 
-    def _escape_string(value):
-        if isinstance(value, bytes):
-            return "X'{}'".format(
-                codecs.encode(value, 'hex').decode('utf-8'))
+    return "'{}'".format(value.replace("'", "''"))
 
-        return "'{}'".format(value.replace("'", "''"))
 
-    def _adapt_datetime(val):
-        return val.isoformat(" ")
-else:
+def _adapt_datetime(val):
+    return val.isoformat(" ")
 
-    def _escape_string(value):
-        if isinstance(value, bytes):
-            try:
-                value = value.decode('utf-8')
-            except UnicodeDecodeError:
-                # Encode as a BLOB literal containing hexadecimal data
-                return "X'{}'".format(
-                    codecs.encode(value, 'hex').decode('utf-8'))
-
-        return "'{}'".format(value.replace("'", "''"))
-
-    def _adapt_datetime(val):
-        return val.isoformat(b" ")
 
 def _adapt_date(val):
     return val.isoformat()
@@ -90,7 +68,7 @@ adapters = {
     float: lambda x: x,
     int: lambda x: x,
     bool: int,
-    unicode: lambda x: x.encode('utf-8'),
+    str: lambda x: x.encode('utf-8'),
     type(None): lambda x: None,
     datetime.date: _adapt_date,
     datetime.datetime: _adapt_datetime,
@@ -174,7 +152,7 @@ def _convert_to_python(column_name, type_, parse_decltypes=False, parse_colnames
 
 
 def _adapt_from_python(value):
-    if not isinstance(value, basestring):
+    if not isinstance(value, str):
         adapter_key = (type(value), sqlite3.PrepareProtocol)
         adapter = adapters.get(adapter_key)
         try:
@@ -198,7 +176,7 @@ def _adapt_from_python(value):
         adapted = value
 
     # The adapter could had returned a string
-    if isinstance(adapted, (bytes, unicode)):
+    if isinstance(adapted, (bytes, str)):
         adapted = _escape_string(adapted)
     elif adapted is None:
         adapted = 'NULL'
@@ -218,7 +196,7 @@ def _decode_base64_converter(converter, value):
     return value
 
 def _conditional_string_decode_base64(value):
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         if not isinstance(value, bytes):
             value = value.encode('utf-8')
         value = codecs.decode(value, 'base64')

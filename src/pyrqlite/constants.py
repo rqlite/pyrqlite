@@ -1,6 +1,4 @@
 
-from __future__ import unicode_literals
-
 __project__ = "pyrqlite"
 
 __author__ = "Zac Medico"

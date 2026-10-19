@@ -12,9 +12,7 @@ This package contains a pure-Python rqlite client library.
 Requirements
 -------------
 
-* Python -- one of the following:
-
-  - CPython_ >= 2.7 or >= 3.3
+* Python -- CPython_ >= 3.3
 
 * rqlite Server
 
@@ -30,28 +28,28 @@ You can also just clone the repo and install it from source::
 
     $ git clone https://github.com/rqlite/pyrqlite.git
     $ cd pyrqlite
-    $ python setup.py install
+    $ pip install .
 
-Finally (e.g. if ``pip`` is not available), a tarball can be downloaded
-from GitHub and installed with Setuptools::
+Finally, a tarball of a tagged release can be downloaded from GitHub and
+installed the same way::
 
-    $ # X.Y.Z is the desired pyrqlite version (e.g. 2.2.1).
+    $ # X.Y.Z is the desired pyrqlite version (e.g. 2.2.3).
     $ curl -L https://github.com/rqlite/pyrqlite/archive/refs/tags/vX.Y.Z.tar.gz | tar xz
     $ cd pyrqlite*
-    $ python setup.py install
+    $ pip install .
     $ # The folder pyrqlite* can be safely removed now.
 
-You mean need to run the installation process with ``root`` privileges.
+You may need to run the installation process with ``root`` privileges.
 
 Test Suite
 ----------
 
-To run all the tests, execute the script ``setup.py``::
+The test suite starts its own ``rqlited`` process, so a copy of the rqlite
+binary is required. Point ``RQLITED_PATH`` at it, then run pytest
+(https://pytest.org/) from the repository root::
 
-    $ python setup.py test
-
-pytest (https://pytest.org/) and pytest-cov are required to run the test
-suite. They can both be installed with ``pip``
+    $ pip install pytest
+    $ RQLITED_PATH=/path/to/rqlited PYTHONPATH=src pytest src/test
 
 Example
 -------
@@ -87,14 +85,11 @@ The following code creates a connection and executes some statements:
     finally:
         connection.close()
 
-.. code:: python
-
-This example will print:
-
+This example will print::
 
     (1, 'a')
     (2, 'b')
-    
+
 Paramstyle
 -------------
 
@@ -113,3 +108,5 @@ DB-API 2.0: http://www.python.org/dev/peps/pep-0249
 License
 -------------
 pyrqlite is released under the MIT License. See LICENSE for more information.
+
+.. _CPython: https://www.python.org/

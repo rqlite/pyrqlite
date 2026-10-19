@@ -1,21 +1,9 @@
 
-from __future__ import unicode_literals
-
-import codecs
+import base64
 import logging
 import warnings
-
-try:
-    from http.client import HTTPConnection, HTTPSConnection
-except ImportError:
-    # pylint: disable=import-error
-    from httplib import HTTPConnection, HTTPSConnection
-
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    # pylint: disable=import-error
-    from urlparse import urlparse
+from http.client import HTTPConnection, HTTPSConnection
+from urllib.parse import urlparse
 
 from .constants import (
     UNLIMITED_REDIRECTS,
@@ -62,9 +50,9 @@ class Connection(object):
         self.ssl_context = ssl_context
         self._headers = {}
         if not (user is None or password is None):
-            self._headers['Authorization'] = 'Basic ' + \
-                codecs.encode('{}:{}'.format(user, password).encode('utf-8'),
-                              'base64').decode('utf-8').rstrip('\n')
+            credentials = '{}:{}'.format(user, password).encode('utf-8')
+            self._headers['Authorization'] = \
+                'Basic ' + base64.b64encode(credentials).decode('ascii')
 
         if connect_timeout is not DeprecationWarning:
             warnings.warn(
@@ -109,13 +97,14 @@ class Connection(object):
         else:
             raise Connection.ProgrammingError('Unsupported scheme %r' % self.scheme)
 
-    def _retry_request(self, method, uri, body=None, headers={}):
+    def _retry_request(self, method, uri, body=None, headers=None):
+        all_headers = dict(self._headers, **(headers or {}))
         tries = 10
         while tries:
             tries -= 1
             try:
                 self._connection.request(method, uri, body=body,
-                                         headers=dict(self._headers, **headers))
+                                         headers=all_headers)
                 return self._connection.getresponse()
             except Exception:
                 if not tries:
@@ -123,7 +112,7 @@ class Connection(object):
                 self._connection.close()
                 self._connection = self._init_connection()
 
-    def _fetch_response(self, method, uri, body=None, headers={}):
+    def _fetch_response(self, method, uri, body=None, headers=None):
         """
         Fetch a response, handling redirection.
         """
@@ -139,6 +128,12 @@ class Connection(object):
 
             logging.getLogger(__name__).debug("status: %s reason: '%s' location: '%s'",
                                               response.status, response.reason, uri)
+
+            # Drain the redirect body so the connection can be reused.
+            # http.client refuses a new request while a response is
+            # unread, which previously forced a reconnect via the
+            # retry loop on every same-host redirect.
+            response.read()
 
             if self.host != location.hostname or self.port != location.port:
                 self._connection.close()
@@ -160,9 +155,15 @@ class Connection(object):
         cursor objects trying to use the connection. Note that closing
         a connection without committing the changes first will cause an
         implicit rollback to be performed."""
-        self._connection.close()
-        if self._ephemeral is not None:
-            self._ephemeral.__exit__(None, None, None)
+        # __init__ can raise before these attributes exist, and
+        # __del__ still runs on the partly built object, so look them
+        # up defensively.
+        connection = getattr(self, '_connection', None)
+        if connection is not None:
+            connection.close()
+        ephemeral = getattr(self, '_ephemeral', None)
+        if ephemeral is not None:
+            ephemeral.__exit__(None, None, None)
             self._ephemeral = None
 
     def __del__(self):
@@ -194,7 +195,7 @@ class Connection(object):
                 self._connection = self._init_connection()
             else:
                 raise self.Error("Already closed")
-        try: 
+        try:
             self.execute("SELECT 1")
         except Exception:
             if reconnect:

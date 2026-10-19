@@ -1,35 +1,72 @@
 
-from __future__ import unicode_literals
-
 from collections import OrderedDict
 import json
 import logging
-import sys
 import re
+from urllib.parse import urlencode
 
-try:
-    # pylint: disable=no-name-in-module
-    from urllib.parse import urlencode
-except ImportError:
-    # pylint: disable=no-name-in-module
-    from urllib import urlencode
-
-from .exceptions import Error, ProgrammingError
+from .exceptions import (
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
+)
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
 
 
-if sys.version_info[0] >= 3:
-    basestring = str
-    _urlencode = urlencode
-else:
-    # avoid UnicodeEncodeError from urlencode
-    def _urlencode(query, doseq=0):
-        return urlencode(dict(
-            (k if isinstance(k, bytes) else k.encode('utf-8'),
-             v if isinstance(v, bytes) else v.encode('utf-8'))
-            for k, v in query.items()), doseq=doseq)
+# SQLite primary result codes, mapped to DB-API exception classes the
+# same way CPython's sqlite3 module does it. Anything not listed is a
+# DatabaseError. Codes: https://www.sqlite.org/rescode.html
+_SQLITE_ERROR_CLASSES = {
+    1: OperationalError,    # SQLITE_ERROR
+    2: InternalError,       # SQLITE_INTERNAL
+    3: OperationalError,    # SQLITE_PERM
+    4: OperationalError,    # SQLITE_ABORT
+    5: OperationalError,    # SQLITE_BUSY
+    6: OperationalError,    # SQLITE_LOCKED
+    7: MemoryError,         # SQLITE_NOMEM
+    8: OperationalError,    # SQLITE_READONLY
+    9: OperationalError,    # SQLITE_INTERRUPT
+    10: OperationalError,   # SQLITE_IOERR
+    11: DatabaseError,      # SQLITE_CORRUPT
+    12: InternalError,      # SQLITE_NOTFOUND
+    13: OperationalError,   # SQLITE_FULL
+    14: OperationalError,   # SQLITE_CANTOPEN
+    15: OperationalError,   # SQLITE_PROTOCOL
+    16: OperationalError,   # SQLITE_EMPTY
+    17: OperationalError,   # SQLITE_SCHEMA
+    18: DataError,          # SQLITE_TOOBIG
+    19: IntegrityError,     # SQLITE_CONSTRAINT
+    20: IntegrityError,     # SQLITE_MISMATCH
+    21: ProgrammingError,   # SQLITE_MISUSE
+    25: ProgrammingError,   # SQLITE_RANGE
+}
+
+
+def _statement_error(item):
+    """
+    Build the exception for a result item carrying an "error" key.
+
+    rqlite 9 and later also send "error_v2" with the SQLite result
+    code, which selects the DB-API exception class. Older servers only
+    send the message, which is reported as an OperationalError.
+    """
+    message = item.get('error', 'unknown error')
+    try:
+        code = item['error_v2']['sqlite']['code']
+    except (KeyError, TypeError):
+        return OperationalError(message)
+    return _SQLITE_ERROR_CLASSES.get(code, DatabaseError)(message)
+
+
+# A named placeholder is a colon followed by an identifier: a letter or
+# underscore, then letters, digits or underscores.
+_NAMED_RE = re.compile(r':([a-zA-Z_][a-zA-Z0-9_]*)')
+_QMARK_RE = re.compile(r'\?')
 
 
 class Cursor(object):
@@ -70,13 +107,15 @@ class Cursor(object):
             body)
         response = self.connection._fetch_response(
             method, uri, body=body, headers=headers)
-        if response.code != 200:
-            raise Error("received unexpected http status: %d" % response.code)
         logger.debug(
             "status: %s reason: %s",
             response.status,
             response.reason)
         response_text = response.read().decode('utf-8')
+        if response.status != 200:
+            raise OperationalError(
+                "received unexpected http status: %d %s: %s" % (
+                    response.status, response.reason, response_text.strip()))
         logger.debug("raw response: %s", response_text)
         response_json = json.loads(
             response_text, object_pairs_hook=OrderedDict)
@@ -93,14 +132,8 @@ class Cursor(object):
         SQLite natively supports only the types TEXT, INTEGER, REAL, BLOB and
         NULL
         '''
-
-        param_matches = 0
-
-        qmark_re = re.compile(r"(\?)")
-        named_re = re.compile(r"(:{1}[a-zA-Z]+?\b)")
-
-        qmark_matches = qmark_re.findall(operation)
-        named_matches = named_re.findall(operation)
+        qmark_matches = _QMARK_RE.findall(operation)
+        named_matches = _NAMED_RE.findall(operation)
         param_matches = len(qmark_matches) + len(named_matches)
 
         # Matches but no parameters
@@ -113,24 +146,29 @@ class Cursor(object):
             return operation
 
         if len(qmark_matches) > 0 and len(named_matches) > 0:
-            raise ProgrammingError('different parameter types in operation not'
-                                   'permitted: %s %s' % 
+            raise ProgrammingError('different parameter types in operation not '
+                                   'permitted: %s %s' %
                                    (operation, parameters))
 
         if isinstance(parameters, dict):
             # parameters is a dict or a dict subclass
             if len(qmark_matches) > 0:
-                raise ProgrammingError('Unamed binding used, but you supplied '
+                raise ProgrammingError('Unnamed binding used, but you supplied '
                                        'a dictionary (which has only names): '
                                        '%s %s' % (operation, parameters))
-            for op_key in named_matches:
+
+            def replace(match):
                 try:
-                    operation = operation.replace(op_key, 
-                                                 _adapt_from_python(parameters[op_key[1:]]))
+                    value = parameters[match.group(1)]
                 except KeyError:
                     raise ProgrammingError('the named parameters given do not '
                                            'match operation: %s %s' %
                                            (operation, parameters))
+                return _adapt_from_python(value)
+
+            # A single regex pass substitutes each placeholder exactly
+            # once, so :a cannot clobber the start of :ab.
+            operation = _NAMED_RE.sub(replace, operation)
         else:
             # parameters is a sequence
             if param_matches != len(parameters):
@@ -152,107 +190,101 @@ class Cursor(object):
         return operation
 
     def _get_sql_command(self, sql_str):
-        return sql_str.split(None, 1)[0].upper()
+        parts = sql_str.split(None, 1)
+        return parts[0].upper() if parts else ''
+
+    @staticmethod
+    def _execute_path(queue, wait):
+        path = "/db/execute?transaction"
+        if queue:
+            path += "&queue"
+        if wait:
+            path += "&wait"
+        return path
+
+    def _handle_results(self, payload, command):
+        """
+        Populate the cursor from the JSON payload of a /db/query or
+        /db/execute response. Raises on the first statement error.
+        """
+        last_insert_id = None
+        rows_affected = -1
+        payload_rows = {}
+        results = payload.get("results")
+        if results is not None:
+            rows_affected = 0
+            for item in results:
+                if 'error' in item:
+                    logging.getLogger(__name__).debug(json.dumps(item))
+                    raise _statement_error(item)
+                rows_affected += item.get('rows_affected', 0)
+                if 'last_insert_id' in item:
+                    last_insert_id = item['last_insert_id']
+                if 'columns' in item:
+                    payload_rows = item
+
+        self.rownumber = 0
+        if 'columns' not in payload_rows:
+            # Not a result set: DDL or DML.
+            self.description = None
+            self._rows = []
+            if command == 'INSERT':
+                self.lastrowid = last_insert_id
+            self.rowcount = rows_affected
+            return
+
+        fields = payload_rows['columns']
+        self.description = tuple(
+            (_column_stripper(field, parse_colnames=self.connection.parse_colnames),
+             None, None, None, None, None, None)
+            for field in fields)
+
+        rows = []
+        values = payload_rows.get('values')
+        types = payload_rows.get('types')
+        if values and types is not None:
+            converters = [_convert_to_python(field, type_,
+                          parse_decltypes=self.connection.parse_decltypes,
+                          parse_colnames=self.connection.parse_colnames)
+                          for field, type_ in zip(fields, types)]
+            for payload_row in values:
+                row = []
+                for field, converter, value in zip(fields, converters, payload_row):
+                    row.append((field, (value if converter is None
+                                        else converter(value))))
+                rows.append(Row(row))
+        self._rows = rows
+        self.rowcount = len(rows)
 
     def execute(self, operation, parameters=None, queue=False, wait=False, consistency=None):
-        if not isinstance(operation, basestring):
+        if not isinstance(operation, str):
             raise ValueError(
-                             "argument must be a string, not '{}'".format(type(operation).__name__))
+                "argument must be a string, not '{}'".format(type(operation).__name__))
 
         operation = self._substitute_params(operation, parameters)
 
         command = self._get_sql_command(operation)
         if command in ('SELECT', 'PRAGMA'):
-            params = {'q': operation}
+            # POST the statement in the body rather than in the URL.
+            # Parameters are inlined client-side, so a large text
+            # parameter can push a GET past the server's request
+            # header limit; a body has no such limit.
+            path = "/db/query"
             if consistency:
-                params["level"] = consistency
-            payload = self._request("GET", "/db/query?" + _urlencode(params))
-        else:
-            path = "/db/execute?transaction"
-            if queue:
-                path = path + "&queue"
-            if wait:
-                path = path +"&wait"
+                path += "?" + urlencode({"level": consistency})
             payload = self._request("POST", path,
-                                    headers={'Content-Type': 'application/json'}, body=json.dumps([operation]))
-
-        last_insert_id = None
-        rows_affected = -1
-        payload_rows = {}
-        try:
-            results = payload["results"]
-        except KeyError:
-            pass
+                                    headers={'Content-Type': 'application/json'},
+                                    body=json.dumps([operation]))
         else:
-            rows_affected = 0
-            for item in results:
-                if 'error' in item:
-                    logging.getLogger(__name__).error(json.dumps(item))
-                    raise Error(json.dumps(item))
-                try:
-                    rows_affected += item['rows_affected']
-                except KeyError:
-                    pass
-                try:
-                    last_insert_id = item['last_insert_id']
-                except KeyError:
-                    pass
-                if 'columns' in item:
-                    payload_rows = item
+            payload = self._request("POST", self._execute_path(queue, wait),
+                                    headers={'Content-Type': 'application/json'},
+                                    body=json.dumps([operation]))
 
-        try:
-            fields = payload_rows['columns']
-        except KeyError:
-            self.description = None
-            self._rows = []
-            if command == 'INSERT':
-                self.lastrowid = last_insert_id
-        else:
-            rows = []
-            description = []
-            for field in fields:
-                description.append((
-                    _column_stripper(field, parse_colnames=self.connection.parse_colnames),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ))
-
-            try:
-                values = payload_rows['values']
-                types = payload_rows['types']
-            except KeyError:
-                pass
-            else:
-                if values:
-                    converters = [_convert_to_python(field, type_,
-                                  parse_decltypes=self.connection.parse_decltypes,
-                                  parse_colnames=self.connection.parse_colnames)
-                                  for field, type_ in zip(fields, types)]
-                    for payload_row in values:
-                        row = []
-                        for field, converter, value in zip(fields, converters, payload_row):
-                            row.append((field, (value if converter is None
-                                                else converter(value))))
-                        rows.append(Row(row))
-            self._rows = rows
-            self.description = tuple(description)
-
-        self.rownumber = 0
-        if command in ('UPDATE', 'DELETE'):
-            # sqalchemy's _emit_update_statements function asserts
-            # rowcount for each update, and _emit_delete_statements
-            # warns unless rowcount matches
-            self.rowcount = rows_affected
-        else:
-            self.rowcount = len(self._rows)
+        self._handle_results(payload, command)
         return self
 
     def executemany(self, operation, seq_of_parameters=None, queue=False, wait=False):
-        if not isinstance(operation, basestring):
+        if not isinstance(operation, str):
             raise ValueError(
                 "argument must be a string, not '{}'".format(type(operation).__name__))
 
@@ -260,35 +292,24 @@ class Cursor(object):
         for parameters in seq_of_parameters:
             statements.append(self._substitute_params(operation, parameters))
 
-        path = "/db/execute?transaction"
-        if queue:
-            path = path + "&queue"
-        if wait:
-            path = path +"&wait"
-        payload = self._request("POST", path,
+        payload = self._request("POST", self._execute_path(queue, wait),
                                 headers={'Content-Type': 'application/json'},
                                 body=json.dumps(statements))
-        rows_affected = -1
-        try:
-            results = payload["results"]
-        except KeyError:
-            pass
-        else:
-            rows_affected = 0
-            for item in results:
-                if 'error' in item:
-                    logging.getLogger(__name__).error(json.dumps(item))
-                try:
-                    rows_affected += item['rows_affected']
-                except KeyError:
-                    pass
-        self._rows = []
-        self.rownumber = 0
-        self.rowcount = rows_affected
+        self._handle_results(payload, self._get_sql_command(operation))
+
+    def _remaining(self):
+        """
+        Number of rows not yet fetched. This is based on the rows
+        actually held, not on rowcount, which for UPDATE and DELETE
+        reports rows affected rather than rows returned.
+        """
+        if self._rows is None:
+            return 0
+        return max(len(self._rows) - self.rownumber, 0)
 
     def fetchone(self):
         ''' Fetch the next row '''
-        if self._rows is None or self.rownumber >= len(self._rows):
+        if not self._remaining():
             return None
         result = self._rows[self.rownumber]
         self.rownumber += 1
@@ -296,14 +317,11 @@ class Cursor(object):
 
     def fetchmany(self, size=None):
         remaining = self.arraysize if size is None else size
-        remaining = min(remaining, self.rowcount - self.rownumber)
+        remaining = min(remaining, self._remaining())
         return [self.fetchone() for i in range(remaining)]
 
     def fetchall(self):
-        rows = []
-        while self.rownumber < self.rowcount:
-            rows.append(self.fetchone())
-        return rows
+        return [self.fetchone() for i in range(self._remaining())]
 
     def setinputsizes(self, sizes):
         raise NotImplementedError(self)
@@ -318,5 +336,5 @@ class Cursor(object):
         raise NotImplementedError(self)
 
     def __iter__(self):
-        while self.rownumber < self.rowcount:
+        while self._remaining():
             yield self.fetchone()
