@@ -14,7 +14,14 @@ except ImportError:
     # pylint: disable=no-name-in-module
     from urllib import urlencode
 
-from .exceptions import Error, ProgrammingError
+from .exceptions import (
+    DatabaseError,
+    DataError,
+    IntegrityError,
+    InternalError,
+    OperationalError,
+    ProgrammingError,
+)
 
 from .row import Row
 from .extensions import _convert_to_python, _adapt_from_python, _column_stripper
@@ -30,6 +37,51 @@ else:
             (k if isinstance(k, bytes) else k.encode('utf-8'),
              v if isinstance(v, bytes) else v.encode('utf-8'))
             for k, v in query.items()), doseq=doseq)
+
+
+# SQLite primary result codes, mapped to DB-API exception classes the
+# same way CPython's sqlite3 module does it. Anything not listed is a
+# DatabaseError. Codes: https://www.sqlite.org/rescode.html
+_SQLITE_ERROR_CLASSES = {
+    1: OperationalError,    # SQLITE_ERROR
+    2: InternalError,       # SQLITE_INTERNAL
+    3: OperationalError,    # SQLITE_PERM
+    4: OperationalError,    # SQLITE_ABORT
+    5: OperationalError,    # SQLITE_BUSY
+    6: OperationalError,    # SQLITE_LOCKED
+    7: MemoryError,         # SQLITE_NOMEM
+    8: OperationalError,    # SQLITE_READONLY
+    9: OperationalError,    # SQLITE_INTERRUPT
+    10: OperationalError,   # SQLITE_IOERR
+    11: DatabaseError,      # SQLITE_CORRUPT
+    12: InternalError,      # SQLITE_NOTFOUND
+    13: OperationalError,   # SQLITE_FULL
+    14: OperationalError,   # SQLITE_CANTOPEN
+    15: OperationalError,   # SQLITE_PROTOCOL
+    16: OperationalError,   # SQLITE_EMPTY
+    17: OperationalError,   # SQLITE_SCHEMA
+    18: DataError,          # SQLITE_TOOBIG
+    19: IntegrityError,     # SQLITE_CONSTRAINT
+    20: IntegrityError,     # SQLITE_MISMATCH
+    21: ProgrammingError,   # SQLITE_MISUSE
+    25: ProgrammingError,   # SQLITE_RANGE
+}
+
+
+def _statement_error(item):
+    """
+    Build the exception for a result item carrying an "error" key.
+
+    rqlite 9 and later also send "error_v2" with the SQLite result
+    code, which selects the DB-API exception class. Older servers only
+    send the message, which is reported as an OperationalError.
+    """
+    message = item.get('error', 'unknown error')
+    try:
+        code = item['error_v2']['sqlite']['code']
+    except (KeyError, TypeError):
+        return OperationalError(message)
+    return _SQLITE_ERROR_CLASSES.get(code, DatabaseError)(message)
 
 
 # A named placeholder is a colon followed by an identifier: a letter or
@@ -76,13 +128,15 @@ class Cursor(object):
             body)
         response = self.connection._fetch_response(
             method, uri, body=body, headers=headers)
-        if response.code != 200:
-            raise Error("received unexpected http status: %d" % response.code)
         logger.debug(
             "status: %s reason: %s",
             response.status,
             response.reason)
         response_text = response.read().decode('utf-8')
+        if response.status != 200:
+            raise OperationalError(
+                "received unexpected http status: %d %s: %s" % (
+                    response.status, response.reason, response_text.strip()))
         logger.debug("raw response: %s", response_text)
         response_json = json.loads(
             response_text, object_pairs_hook=OrderedDict)
@@ -182,8 +236,8 @@ class Cursor(object):
             rows_affected = 0
             for item in results:
                 if 'error' in item:
-                    logging.getLogger(__name__).error(json.dumps(item))
-                    raise Error(json.dumps(item))
+                    logging.getLogger(__name__).debug(json.dumps(item))
+                    raise _statement_error(item)
                 rows_affected += item.get('rows_affected', 0)
                 if 'last_insert_id' in item:
                     last_insert_id = item['last_insert_id']

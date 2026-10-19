@@ -6,7 +6,7 @@ few end-to-end checks against an ephemeral node.
 import unittest
 
 import pyrqlite.dbapi2 as sqlite
-from pyrqlite.cursors import Cursor
+from pyrqlite.cursors import Cursor, _statement_error
 
 
 class NamedParameterTests(unittest.TestCase):
@@ -197,3 +197,81 @@ class RowcountTests(unittest.TestCase):
         self.cu.execute("create table other(y)")
         self.assertEqual(self.cu.rowcount, 0)
         self.cu.execute("drop table other")
+
+
+class ExceptionMappingTests(unittest.TestCase):
+    """
+    Statement errors used to be raised as the base Error with a JSON
+    dump as the message. They now follow the sqlite3 mapping from the
+    SQLite result code, with the server's message verbatim.
+    """
+
+    def test_constraint_is_integrity_error(self):
+        item = {"error": "UNIQUE constraint failed: t.x",
+                "error_v2": {"message": "x", "sqlite": {"code": 19, "extended_code": 1555}}}
+        exc = _statement_error(item)
+        self.assertIsInstance(exc, sqlite.IntegrityError)
+        self.assertEqual(str(exc), "UNIQUE constraint failed: t.x")
+
+    def test_generic_error_is_operational(self):
+        item = {"error": "no such table: t",
+                "error_v2": {"message": "x", "sqlite": {"code": 1, "extended_code": 1}}}
+        self.assertIsInstance(_statement_error(item), sqlite.OperationalError)
+
+    def test_unknown_code_is_database_error(self):
+        item = {"error": "weird", "error_v2": {"sqlite": {"code": 999}}}
+        exc = _statement_error(item)
+        self.assertIs(type(exc), sqlite.DatabaseError)
+
+    def test_missing_error_v2_is_operational(self):
+        # Older rqlite sends only the message.
+        exc = _statement_error({"error": "boom"})
+        self.assertIsInstance(exc, sqlite.OperationalError)
+        self.assertEqual(str(exc), "boom")
+
+    def test_every_mapped_class_is_an_error_subclass(self):
+        from pyrqlite.cursors import _SQLITE_ERROR_CLASSES
+        for cls in _SQLITE_ERROR_CLASSES.values():
+            if cls is MemoryError:
+                continue
+            self.assertTrue(issubclass(cls, sqlite.Error), cls)
+
+
+class ExceptionMappingEndToEndTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cx = sqlite.connect(":memory:")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.cx.close()
+
+    def setUp(self):
+        self.cu = self.cx.cursor()
+        self.cu.execute("create table test(x integer primary key)")
+        self.cu.execute("insert into test(x) values (1)")
+
+    def tearDown(self):
+        self.cu.execute("drop table test")
+        self.cu.close()
+
+    def test_unique_violation(self):
+        with self.assertRaises(sqlite.IntegrityError) as cm:
+            self.cu.execute("insert into test(x) values (1)")
+        self.assertIn("UNIQUE constraint failed", str(cm.exception))
+
+    def test_syntax_error(self):
+        with self.assertRaises(sqlite.OperationalError) as cm:
+            self.cu.execute("selec 1")
+        self.assertIn("syntax error", str(cm.exception))
+
+    def test_executemany_unique_violation(self):
+        with self.assertRaises(sqlite.IntegrityError):
+            self.cu.executemany("insert into test(x) values (?)", [(2,), (1,)])
+
+    def test_http_error_includes_body(self):
+        with self.assertRaises(sqlite.OperationalError) as cm:
+            self.cu._request("POST", "/db/execute", body='"garbage"',
+                             headers={'Content-Type': 'application/json'})
+        self.assertIn("400", str(cm.exception))
+        self.assertIn("invalid request", str(cm.exception))
