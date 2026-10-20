@@ -62,6 +62,12 @@ else:
 def _adapt_date(val):
     return val.isoformat()
 
+def _adapt_bytes(value):
+    # Use byte array for the params API
+    if not isinstance(value, bytes):
+        value = value.encode('utf-8')
+    return list(value)
+
 def _convert_date(val):
     return datetime.date(*map(int, val.split('T')[0].split("-")))
 
@@ -85,16 +91,13 @@ def _null_wrapper(converter, value):
     return value
 
 
+# Adapters only need to adapt Python values before JSON serialization for the rqlite API.
+# Types that are already serialized in an acceptable way without an adapter
+# are not included anymore.
 adapters = {
-    bytes: lambda x: x,
-    float: lambda x: x,
-    int: lambda x: x,
-    bool: int,
-    unicode: lambda x: x.encode('utf-8'),
-    type(None): lambda x: None,
+    bytes: _adapt_bytes,
     datetime.date: _adapt_date,
     datetime.datetime: _adapt_datetime,
-
 }
 adapters = {(type_, sqlite3.PrepareProtocol): val for type_, val in adapters.items()}
 _default_adapters = adapters.copy()
@@ -191,19 +194,13 @@ def _adapt_from_python(value):
             elif hasattr(value, '__conform__'):
                 adapted = value.__conform__(sqlite3.PrepareProtocol)
             else:
-                raise InterfaceError(e)
+                # No adapter available, allow JSON serialization to handle it.
+                # InterfaceError will be raised if it can't be serialized in execute() or executemany()
+                adapted = value
         else:
             adapted = adapter(value)
     else:
         adapted = value
-
-    # The adapter could had returned a string
-    if isinstance(adapted, (bytes, unicode)):
-        adapted = _escape_string(adapted)
-    elif adapted is None:
-        adapted = 'NULL'
-    else:
-        adapted = str(adapted)
 
     return adapted
 
